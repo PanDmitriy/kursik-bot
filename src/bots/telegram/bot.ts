@@ -20,9 +20,10 @@ bot.command("start", async (ctx) => {
   );
 });
 
+// Команда /rate
 bot.command("rate", handleRate);
 
-bot.command("rate", handleRate);
+// Обработка нажатий на кнопки
 bot.on("callback_query:data", handleRateCallback);
 
 
