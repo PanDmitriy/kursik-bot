@@ -1,6 +1,6 @@
 import { Bot, Context } from "grammy";
 import { config } from "dotenv";
-import { handleRate } from "../../features/rates/rate.handler";
+import { handleRate, handleRateCallback } from "../../features/rates/rate.handler";
 // Загружаем переменные из .env
 config();
 
@@ -21,5 +21,9 @@ bot.command("start", async (ctx) => {
 });
 
 bot.command("rate", handleRate);
+
+bot.command("rate", handleRate);
+bot.on("callback_query:data", handleRateCallback);
+
 
 export { bot };
