@@ -16,10 +16,10 @@ export async function handleRate(ctx: Context) {
 }
 
 // Обработка нажатий на кнопки
-export async function handleRateCallback(ctx: Context) {
+export async function handleRateCallback(ctx: Context, next: () => Promise<void>) {
   const callbackData = ctx.callbackQuery?.data;
 
-  if (!callbackData || !callbackData.startsWith("rate_")) return;
+  if (!callbackData || !callbackData.startsWith("rate_")) return next();
 
   const currency = callbackData.replace("rate_", "");
 
