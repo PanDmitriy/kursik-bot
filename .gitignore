@@ -56,4 +56,10 @@ build/
 .DS_Store
 
 # Linux system files
-*~ 
+*~
+
+# SQLite database
+data.sqlite
+
+# DB schema (если не нужен в репозитории)
+# src/shared/db/schema.sql 

@@ -1,6 +1,12 @@
 import { Bot, Context } from "grammy";
 import { config } from "dotenv";
 import { handleRate, handleRateCallback } from "../../features/rates/rate.handler";
+import {
+  handleSubscribe,
+  handleSubscribeCurrency,
+  handleSubscribeTime,
+} from "../../features/subscribe/subscribe.handler";
+
 // Загружаем переменные из .env
 config();
 
@@ -22,9 +28,11 @@ bot.command("start", async (ctx) => {
 
 // Команда /rate
 bot.command("rate", handleRate);
-
-// Обработка нажатий на кнопки
 bot.on("callback_query:data", handleRateCallback);
 
+// Обработка нажатий на кнопки подписки
+bot.command("subscribe", handleSubscribe);
+bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
+bot.callbackQuery(/sub_time_/, handleSubscribeTime);
 
 export { bot };
