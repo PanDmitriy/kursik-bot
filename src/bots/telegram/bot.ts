@@ -10,6 +10,8 @@ import {
   handleUnsubscribe,
   handleUnsubscribeCallback
 } from "../../features/subscribe/unsubscribe.handler";
+import { handleListSubscriptions } from "../../features/subscribe/list.handler";
+
 
 // Загружаем переменные из .env
 config();
@@ -26,7 +28,8 @@ bot.command("start", async (ctx) => {
 📌 Доступные команды:
 /rate [код валюты] — курс валюты к BYN (по умолчанию USD)
 /subscribe — ежедневная рассылка курса
-/unsubscribe — отключить рассылку`
+/unsubscribe — отключить рассылку
+/subscriptions — список подписок`
   );
 });
 
@@ -42,5 +45,8 @@ bot.callbackQuery(/sub_time_/, handleSubscribeTime);
 // Обработка нажатий на кнопки отписки
 bot.command("unsubscribe", handleUnsubscribe);
 bot.callbackQuery(/unsub_/, handleUnsubscribeCallback);
+
+// Команда /subscriptions
+bot.command("subscriptions", handleListSubscriptions);
 
 export { bot };

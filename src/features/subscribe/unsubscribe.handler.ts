@@ -23,13 +23,13 @@ export async function handleUnsubscribe(ctx: Context) {
   });
 }
 
-export async function handleUnsubscribeCallback(ctx: Context) {
+export async function handleUnsubscribeCallback(ctx: Context, next: () => Promise<void>) {
   const data = ctx.callbackQuery?.data;
-  if (!data?.startsWith("unsub_")) return;
+  if (!data?.startsWith("unsub_")) return next(); 
 
   const currency = data.replace("unsub_", "");
   const chatId = ctx.chat?.id;
-  if (!chatId) return;
+  if (!chatId) return next();
 
   removeSubscription(chatId, currency);
   await ctx.answerCallbackQuery({ text: `✅ Подписка для ${currency} удалена.` });

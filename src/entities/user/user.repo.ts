@@ -5,19 +5,15 @@ export interface Subscription {
   hour: number;
 }
 
-
-export function addSubscription(chatId: number, currency: string, hour: number) {
-  const stmt = db.prepare(`
+export function addSubscription(chatId: number, currency: string, hour: number): void {
+  db.prepare(`
     INSERT OR REPLACE INTO subscriptions (chat_id, currency, hour)
     VALUES (?, ?, ?)
-  `);
-  stmt.run(chatId, currency, hour);
+  `).run(chatId, currency, hour);
 }
 
 export function getUserSubscriptions(chatId: number): Subscription[] {
-  return db.prepare(`
-    SELECT currency, hour FROM subscriptions WHERE chat_id = ?
-  `).all(chatId) as Subscription[];
+  return db.prepare(`SELECT currency, hour FROM subscriptions WHERE chat_id = ?`).all(chatId) as Subscription[];
 }
 
 export function removeSubscription(chatId: number, currency: string): void {
