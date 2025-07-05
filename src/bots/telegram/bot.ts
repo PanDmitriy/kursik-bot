@@ -12,6 +12,13 @@ import {
 } from "../../features/subscribe/unsubscribe.handler";
 import { handleListSubscriptions } from "../../features/subscribe/list.handler";
 import { startNotifier } from "../../features/notifier/notifier";
+import {
+  handleSetTimezone,
+  handleLocation,
+  handleManualTimezone,
+  handleTimezoneText,
+} from "../../features/timezone/timezone.handler";
+
 
 // Загружаем переменные из .env
 config();
@@ -29,7 +36,8 @@ bot.command("start", async (ctx) => {
 /rate [код валюты] — курс валюты к BYN (по умолчанию USD)
 /subscribe — ежедневная рассылка курса
 /unsubscribe — отключить рассылку
-/subscriptions — список подписок`
+/subscriptions — список подписок
+/set_timezone — установить часовой пояс`
   );
 });
 
@@ -48,6 +56,12 @@ bot.callbackQuery(/unsub_/, handleUnsubscribeCallback);
 
 // Команда /subscriptions
 bot.command("subscriptions", handleListSubscriptions);
+
+// Команда /set_timezone
+bot.command("set_timezone", handleSetTimezone);
+bot.on(":location", handleLocation);
+bot.hears("🗂 Выбрать из списка", handleManualTimezone);
+bot.hears(/^Europe\/|^Asia\//, handleTimezoneText);
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);

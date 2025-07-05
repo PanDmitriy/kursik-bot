@@ -8,6 +8,7 @@ async function bootstrap() {
       { command: "subscribe", description: "Подписка на ежедневную рассылку" },
       { command: "unsubscribe", description: "Отключить подписку" },
       { command: "subscriptions", description: "Список моих подписок" },
+      { command: "set_timezone", description: "Установить часовой пояс" },
     ]);
 
     await bot.start();

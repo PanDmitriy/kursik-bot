@@ -1,7 +1,9 @@
 import cron from "node-cron";
+import { Bot } from "grammy";
+import { DateTime } from "luxon";
 import { getAllChatIds, getUserSubscriptions, Subscription } from "../../entities/user/user.repo";
 import { getExchangeRate } from "../../shared/api/exchange";
-import { Bot } from "grammy";
+
 
 // Функция запуска планировщика
 export function startNotifier(bot: Bot) {
@@ -16,20 +18,21 @@ export function startNotifier(bot: Bot) {
     for (const chatId of allChatIds) {
       const subs: Subscription[] = getUserSubscriptions(chatId);
 
-      for (const { currency, hour } of subs) {
-        if (hour === currentHour) {
-          const result = await getExchangeRate(currency);
-          if (!result) continue;
-
-          const { rate, scale } = result;
-
-          await bot.api.sendMessage(
-            chatId,
-            `📢 Курс ${currency} на ${now.toLocaleDateString()}:\n` +
-              `${scale} ${currency} = ${rate.toFixed(4)} BYN`
-          );
+        for (const { currency, hour, timezone } of subs) {
+          const now = DateTime.now().setZone(timezone);
+          if (now.hour === hour) {
+            const result = await getExchangeRate(currency);
+            if (!result) continue;
+      
+            const { rate, scale } = result;
+      
+            await bot.api.sendMessage(
+              chatId,
+              `📢 ${scale} ${currency} = ${rate.toFixed(4)} BYN\n` +
+              `🕒 Отправлено в ${now.toFormat("HH:mm")} (${timezone})`
+            );
+          }
         }
-      }
     }
   });
 
