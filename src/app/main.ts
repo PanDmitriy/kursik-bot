@@ -7,6 +7,7 @@ async function bootstrap() {
       { command: "rate", description: "Курс валюты к BYN" },
       { command: "subscribe", description: "Подписка на ежедневную рассылку" },
       { command: "unsubscribe", description: "Отключить подписку" },
+      { command: "subscriptions", description: "Список моих подписок" },
     ]);
 
     await bot.start();
