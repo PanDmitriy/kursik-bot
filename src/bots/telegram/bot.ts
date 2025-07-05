@@ -6,6 +6,10 @@ import {
   handleSubscribeCurrency,
   handleSubscribeTime,
 } from "../../features/subscribe/subscribe.handler";
+import {
+  handleUnsubscribe,
+  handleUnsubscribeCallback
+} from "../../features/subscribe/unsubscribe.handler";
 
 // Загружаем переменные из .env
 config();
@@ -34,5 +38,9 @@ bot.on("callback_query:data", handleRateCallback);
 bot.command("subscribe", handleSubscribe);
 bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
 bot.callbackQuery(/sub_time_/, handleSubscribeTime);
+
+// Обработка нажатий на кнопки отписки
+bot.command("unsubscribe", handleUnsubscribe);
+bot.callbackQuery(/unsub_/, handleUnsubscribeCallback);
 
 export { bot };
