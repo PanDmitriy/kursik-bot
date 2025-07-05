@@ -39,8 +39,9 @@ export async function handleSubscribeTime(ctx: Context, next: () => Promise<void
   const hour = parseInt(hourStr);
 
   if (ctx.chat?.id && currency && hour) {
-    addSubscription(ctx.chat.id, currency, hour);
+    addSubscription(ctx.chat.id, currency, hour, "Europe/Minsk");
     await ctx.answerCallbackQuery({ text: "Подписка оформлена!" });
-    await ctx.reply(`✅ Подписка: ${currency} в ${hour.toString().padStart(2, "0")}:00`);
+    await ctx.reply(`✅ Подписка: ${currency} в ${hour.toString().padStart(2, "0")}:00 по Минску`);
+    return next();
   }
 }
