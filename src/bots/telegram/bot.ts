@@ -11,7 +11,7 @@ import {
   handleUnsubscribeCallback
 } from "../../features/subscribe/unsubscribe.handler";
 import { handleListSubscriptions } from "../../features/subscribe/list.handler";
-
+import { startNotifier } from "../../features/notifier/notifier";
 
 // Загружаем переменные из .env
 config();
@@ -48,5 +48,8 @@ bot.callbackQuery(/unsub_/, handleUnsubscribeCallback);
 
 // Команда /subscriptions
 bot.command("subscriptions", handleListSubscriptions);
+
+// Запускаем планировщик уведомлений
+startNotifier(bot);
 
 export { bot };

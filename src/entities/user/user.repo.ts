@@ -21,3 +21,8 @@ export function removeSubscription(chatId: number, currency: string): void {
     DELETE FROM subscriptions WHERE chat_id = ? AND currency = ?
   `).run(chatId, currency);
 }
+
+export function getAllChatIds(): number[] {
+  const rows = db.prepare("SELECT DISTINCT chat_id FROM subscriptions").all() as { chat_id: number }[];
+  return rows.map((r) => r.chat_id);
+}
