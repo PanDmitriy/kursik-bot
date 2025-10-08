@@ -21,8 +21,7 @@ import {
 
 
 // Загружаем переменные из .env
-const envFile = process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.dev';
-config({ path: envFile });
+config();
 
 const bot = new Bot<Context>(process.env.BOT_TOKEN!);
 
