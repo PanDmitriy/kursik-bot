@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  kursik-bot:
+    build: .
+    container_name: kursik-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Монтируем базу данных для сохранения данных
+      - ./data:/app/data
+    # Если нужны логи
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Ограничения ресурсов
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
