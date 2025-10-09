@@ -49,6 +49,11 @@ build/
 .env
 .env.dev
 .env.prod
+.env.local
+.env.production
+
+# Docker
+docker-compose.override.yml
 
 # VS Code settings
 .vscode/
