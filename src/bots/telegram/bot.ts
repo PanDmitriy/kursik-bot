@@ -17,6 +17,11 @@ import {
   handleLocation,
   handleManualTimezone,
   handleTimezoneText,
+  handleTimezoneSearch,
+  handleTimezoneSearchQuery,
+  handleTimezoneRegions,
+  handleTimezoneRegion,
+  handleTimezoneCallback,
 } from "../../features/timezone/timezone.handler";
 
 
@@ -62,7 +67,25 @@ bot.command("subscriptions", handleListSubscriptions);
 bot.command("set_timezone", handleSetTimezone);
 bot.on(":location", handleLocation);
 bot.hears("🗂 Выбрать из списка", handleManualTimezone);
-bot.hears(/^Europe\/|^Asia\//, handleTimezoneText);
+bot.hears("🔍 Поиск часового пояса", handleTimezoneSearch);
+
+// Обработка callback-запросов для часовых поясов
+bot.callbackQuery("tz_regions", handleTimezoneRegions);
+bot.callbackQuery("tz_popular", handleManualTimezone);
+
+bot.callbackQuery(/^tz_region_/, async (ctx) => {
+  const regionName = ctx.callbackQuery.data.replace("tz_region_", "");
+  await handleTimezoneRegion(ctx, regionName);
+});
+
+// Обработка выбора конкретного часового пояса (более точное регулярное выражение)
+bot.callbackQuery(/^tz_[A-Za-z]+\/[A-Za-z_]+$/, async (ctx) => {
+  const timezoneId = ctx.callbackQuery.data.replace("tz_", "");
+  await handleTimezoneCallback(ctx, timezoneId);
+});
+
+// Обработка текстового ввода для поиска часовых поясов
+bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);
