@@ -1,6 +1,7 @@
 import { Context, InlineKeyboard } from "grammy";
 import { AVAILABLE_CURRENCIES } from "../rates/rate.handler";
-import { addSubscription } from "../../entities/user/user.repo";
+import { addSubscription, getUserTimezone } from "../../entities/user/user.repo";
+import { TimezoneService } from "../../shared/services/timezone.service";
 
 // Ожидание ввода времени для выбранной валюты по chatId
 const pendingTimeByChatId = new Map<number, string>();
@@ -45,9 +46,24 @@ export async function handleSubscribeTime(ctx: Context, next: () => Promise<void
   const hour = parseInt(match[1], 10);
   const minute = parseInt(match[2], 10);
 
-  addSubscription(chatId, pendingCurrency, hour, minute, "Europe/Minsk");
+  const userTimezone = getUserTimezone(chatId);
+  const timezoneInfo = TimezoneService.getTimezoneInfo(userTimezone);
+  
+  addSubscription(chatId, pendingCurrency, hour, minute, userTimezone);
+  
+  const timezoneDisplay = timezoneInfo?.displayName || userTimezone;
+  
   await ctx.reply(
-    `✅ Подписка: ${pendingCurrency} в ${match[0]} по Минску. Измени часовой пояс через /set_timezone`
+    `✅ <b>Подписка создана!</b>
+
+💰 Валюта: <b>${pendingCurrency}</b>
+🕐 Время: <b>${match[0]}</b>
+🌍 Часовой пояс: <b>${timezoneDisplay}</b>
+
+Уведомления будут приходить ежедневно в указанное время.
+
+<i>Изменить часовой пояс можно через /set_timezone</i>`,
+    { parse_mode: "HTML" }
   );
   pendingTimeByChatId.delete(chatId);
 }

@@ -31,6 +31,14 @@ export function getAllChatIds(): number[] {
   return rows.map((r) => r.chat_id);
 }
 
+export function getUserTimezone(chatId: number): string {
+  const row = db.prepare(`
+    SELECT timezone FROM subscriptions WHERE chat_id = ? LIMIT 1
+  `).get(chatId) as { timezone: string } | undefined;
+  
+  return row?.timezone || "Europe/Minsk";
+}
+
 export function setUserTimezone(chatId: number, timezone: string) {
   db.prepare(`
     UPDATE subscriptions SET timezone = ? WHERE chat_id = ?
