@@ -89,13 +89,19 @@ export async function handleSettingsMenu(ctx: Context) {
   // Добавляем уровень в хлебные крошки
   NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.SETTINGS);
 
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+
+  // Создаем клавиатуру с кнопками настроек и навигацией
   const keyboard = new InlineKeyboard()
     .text("🌍 Часовой пояс", "settings_timezone")
     .row()
     .text("🔔 Уведомления", "settings_notifications");
 
-  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  // Добавляем навигационные кнопки
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
+    { text: "🌍 Часовой пояс", callback_data: "settings_timezone" },
+    { text: "🔔 Уведомления", callback_data: "settings_notifications" }
+  ]);
 
   await ctx.reply(
     `${breadcrumbs}⚙️ <b>Настройки</b>
@@ -150,12 +156,13 @@ export async function handleHelpMenu(ctx: Context) {
   // Добавляем уровень в хлебные крошки
   NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.HELP);
 
-  const keyboard = new InlineKeyboard()
-    .text("📋 Команды", "help_commands")
-    .text("❓ FAQ", "help_faq");
-
-  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
   const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+
+  // Создаем клавиатуру с кнопками помощи и навигацией
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
+    { text: "📋 Команды", callback_data: "help_commands" },
+    { text: "❓ FAQ", callback_data: "help_faq" }
+  ]);
 
   await ctx.reply(
     `${breadcrumbs}ℹ️ <b>Помощь</b>
@@ -174,6 +181,9 @@ export async function handleHelpMenu(ctx: Context) {
 export async function handleHelpCommands(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
+
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, "Команды");
 
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
     { text: "❓ FAQ", callback_data: "help_faq" }
@@ -208,6 +218,9 @@ export async function handleHelpCommands(ctx: Context) {
 export async function handleHelpFaq(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
+
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, "FAQ");
 
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
     { text: "📋 Команды", callback_data: "help_commands" }

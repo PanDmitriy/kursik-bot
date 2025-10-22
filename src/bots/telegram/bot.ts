@@ -177,6 +177,10 @@ bot.callbackQuery("nav_back", async (ctx) => {
       case NAVIGATION_LEVELS.HELP:
         await handleHelpMenu(ctx);
         break;
+      case "Команды":
+      case "FAQ":
+        await handleHelpMenu(ctx);
+        break;
       default:
         await handleMainMenu(ctx);
     }
