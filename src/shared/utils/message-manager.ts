@@ -53,10 +53,16 @@ export async function updateTimezoneInterfaceMessage(
       // Пытаемся отредактировать существующее сообщение
       await ctx.api.editMessageText(chatId, existingMessageId, text, options);
       return { message_id: existingMessageId };
-    } catch (error) {
-      // Если редактирование не удалось (например, сообщение было удалено),
+    } catch (error: any) {
+      // Если редактирование не удалось (например, сообщение было удалено или слишком старое),
       // создаем новое сообщение
-      console.log(`Failed to edit message ${existingMessageId}, creating new one:`, error);
+      if (error?.error_code === 400 && error?.description?.includes("can't be edited")) {
+        // Это ожидаемая ошибка - сообщение нельзя редактировать
+        console.log(`Message ${existingMessageId} cannot be edited (too old or deleted), creating new one`);
+      } else {
+        // Неожиданная ошибка
+        console.error(`Unexpected error editing message ${existingMessageId}:`, error);
+      }
       clearTimezoneInterfaceMessage(chatId);
     }
   }
