@@ -23,6 +23,15 @@ import {
   handleTimezoneRegion,
   handleTimezoneCallback,
 } from "../../features/timezone/timezone.handler";
+import {
+  handleMainMenu,
+  handleMenuCallback,
+  handleSettingsMenu,
+  handleStatsMenu,
+  handleHelpMenu,
+  handleHelpCommands,
+  handleHelpFaq,
+} from "../../features/menu/menu.handler";
 
 
 // Загружаем переменные из .env
@@ -42,9 +51,15 @@ bot.command("start", async (ctx) => {
 /subscribe — ежедневная рассылка курса
 /unsubscribe — отключить рассылку
 /subscriptions — список подписок
-/set_timezone — установить часовой пояс`
+/set_timezone — установить часовой пояс
+
+💡 <b>Совет:</b> Используй /menu для быстрого доступа ко всем функциям!`,
+    { parse_mode: "HTML" }
   );
 });
+
+// Команда /menu - главное меню
+bot.command("menu", handleMainMenu);
 
 // Команда /rate
 bot.command("rate", handleRate);
@@ -86,6 +101,27 @@ bot.callbackQuery(/^tz_[A-Za-z]+\/[A-Za-z_]+$/, async (ctx) => {
 
 // Обработка текстового ввода для поиска часовых поясов
 bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
+
+// Обработка callback-запросов главного меню
+bot.callbackQuery(/^menu_/, handleMenuCallback);
+bot.callbackQuery(/^settings_/, async (ctx) => {
+  const data = ctx.callbackQuery?.data;
+  if (data === "settings_timezone") {
+    await handleSetTimezone(ctx);
+  } else if (data === "settings_notifications") {
+    await ctx.reply("🔔 Настройки уведомлений пока в разработке");
+  }
+  await ctx.answerCallbackQuery();
+});
+bot.callbackQuery(/^help_/, async (ctx) => {
+  const data = ctx.callbackQuery?.data;
+  if (data === "help_commands") {
+    await handleHelpCommands(ctx);
+  } else if (data === "help_faq") {
+    await handleHelpFaq(ctx);
+  }
+  await ctx.answerCallbackQuery();
+});
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);
