@@ -83,19 +83,26 @@ export async function handleMenuCallback(ctx: Context, next: () => Promise<void>
  * Меню настроек
  */
 export async function handleSettingsMenu(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.SETTINGS);
+
   const keyboard = new InlineKeyboard()
     .text("🌍 Часовой пояс", "settings_timezone")
     .row()
-    .text("🔔 Уведомления", "settings_notifications")
-    .row()
-    .text("🔙 Главное меню", "menu_main");
+    .text("🔔 Уведомления", "settings_notifications");
+
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `⚙️ <b>Настройки</b>
+    `${breadcrumbs}⚙️ <b>Настройки</b>
 
 Выбери что хочешь настроить:`,
     { 
-      reply_markup: keyboard,
+      reply_markup: navKeyboard,
       parse_mode: "HTML"
     }
   );
@@ -108,15 +115,18 @@ export async function handleStatsMenu(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.STATS);
+
   // Получаем статистику пользователя
   const subs = getUserSubscriptions(chatId);
   const totalSubs = subs.length;
   
-  const keyboard = new InlineKeyboard()
-    .text("🔙 Главное меню", "menu_main");
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `📊 <b>Твоя статистика</b>
+    `${breadcrumbs}📊 <b>Твоя статистика</b>
 
 🔔 Активных подписок: <b>${totalSubs}</b>
 💰 Отслеживаемых валют: <b>${new Set(subs.map(s => s.currency)).size}</b>
@@ -124,7 +134,7 @@ export async function handleStatsMenu(ctx: Context) {
 
 <i>Статистика обновляется в реальном времени</i>`,
     { 
-      reply_markup: keyboard,
+      reply_markup: navKeyboard,
       parse_mode: "HTML"
     }
   );
@@ -134,18 +144,25 @@ export async function handleStatsMenu(ctx: Context) {
  * Меню помощи
  */
 export async function handleHelpMenu(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.HELP);
+
   const keyboard = new InlineKeyboard()
     .text("📋 Команды", "help_commands")
-    .text("❓ FAQ", "help_faq")
-    .row()
-    .text("🔙 Главное меню", "menu_main");
+    .text("❓ FAQ", "help_faq");
+
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `ℹ️ <b>Помощь</b>
+    `${breadcrumbs}ℹ️ <b>Помощь</b>
 
 Выбери что тебя интересует:`,
     { 
-      reply_markup: keyboard,
+      reply_markup: navKeyboard,
       parse_mode: "HTML"
     }
   );
@@ -155,11 +172,16 @@ export async function handleHelpMenu(ctx: Context) {
  * Список команд
  */
 export async function handleHelpCommands(ctx: Context) {
-  const keyboard = new InlineKeyboard()
-    .text("🔙 Назад к помощи", "menu_help");
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
+    { text: "❓ FAQ", callback_data: "help_faq" }
+  ]);
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `📋 <b>Доступные команды</b>
+    `${breadcrumbs}📋 <b>Доступные команды</b>
 
 <b>Основные:</b>
 /start — запуск бота
@@ -174,7 +196,7 @@ export async function handleHelpCommands(ctx: Context) {
 • Нажми на кнопки в главном меню
 • Используй /menu для быстрого доступа ко всем функциям`,
     { 
-      reply_markup: keyboard,
+      reply_markup: navKeyboard,
       parse_mode: "HTML"
     }
   );
@@ -184,11 +206,16 @@ export async function handleHelpCommands(ctx: Context) {
  * FAQ
  */
 export async function handleHelpFaq(ctx: Context) {
-  const keyboard = new InlineKeyboard()
-    .text("🔙 Назад к помощи", "menu_help");
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
+    { text: "📋 Команды", callback_data: "help_commands" }
+  ]);
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `❓ <b>Часто задаваемые вопросы</b>
+    `${breadcrumbs}❓ <b>Часто задаваемые вопросы</b>
 
 <b>Как работает подписка?</b>
 • Выбери валюту и время уведомления
@@ -206,7 +233,7 @@ export async function handleHelpFaq(ctx: Context) {
 <b>Поддерживаемые валюты:</b>
 USD, EUR, RUB, CNY, PLN`,
     { 
-      reply_markup: keyboard,
+      reply_markup: navKeyboard,
       parse_mode: "HTML"
     }
   );
