@@ -70,17 +70,18 @@ bot.hears("🗂 Выбрать из списка", handleManualTimezone);
 bot.hears("🔍 Поиск часового пояса", handleTimezoneSearch);
 
 // Обработка callback-запросов для часовых поясов
-bot.callbackQuery(/^tz_[A-Za-z\/_]+$/, async (ctx) => {
-  const timezoneId = ctx.callbackQuery.data.replace("tz_", "");
-  await handleTimezoneCallback(ctx, timezoneId);
-});
-
 bot.callbackQuery("tz_regions", handleTimezoneRegions);
 bot.callbackQuery("tz_popular", handleManualTimezone);
 
 bot.callbackQuery(/^tz_region_/, async (ctx) => {
   const regionName = ctx.callbackQuery.data.replace("tz_region_", "");
   await handleTimezoneRegion(ctx, regionName);
+});
+
+// Обработка выбора конкретного часового пояса (более точное регулярное выражение)
+bot.callbackQuery(/^tz_[A-Za-z]+\/[A-Za-z_]+$/, async (ctx) => {
+  const timezoneId = ctx.callbackQuery.data.replace("tz_", "");
+  await handleTimezoneCallback(ctx, timezoneId);
 });
 
 // Обработка текстового ввода для поиска часовых поясов
