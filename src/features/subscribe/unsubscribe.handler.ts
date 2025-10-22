@@ -1,13 +1,30 @@
 import { Context, InlineKeyboard } from "grammy";
 import { getUserSubscriptions, removeSubscription } from "../../entities/user/user.repo";
+import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 export async function handleUnsubscribe(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.UNSUBSCRIBE);
+
   const subs = getUserSubscriptions(chatId);
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+
   if (subs.length === 0) {
-    return ctx.reply("❗ У тебя нет активных подписок.");
+    const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
+    
+    await ctx.reply(
+      `${breadcrumbs}❌ <b>Отписка от уведомлений</b>
+
+❗ У тебя нет активных подписок.`,
+      { 
+        reply_markup: navKeyboard,
+        parse_mode: "HTML"
+      }
+    );
+    return;
   }
 
   const keyboard = new InlineKeyboard();
@@ -18,9 +35,17 @@ export async function handleUnsubscribe(ctx: Context) {
     );
   }
 
-  await ctx.reply("Выбери подписку для удаления:", {
-    reply_markup: keyboard,
-  });
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
+
+  await ctx.reply(
+    `${breadcrumbs}❌ <b>Отписка от уведомлений</b>
+
+Выбери подписку для удаления:`,
+    { 
+      reply_markup: navKeyboard,
+      parse_mode: "HTML"
+    }
+  );
 }
 
 export async function handleUnsubscribeCallback(ctx: Context, next: () => Promise<void>) {

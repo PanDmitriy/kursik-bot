@@ -1,6 +1,6 @@
-import { Bot, Context } from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { config } from "dotenv";
-import { handleRate, handleRateCallback } from "../../features/rates/rate.handler";
+import { handleRate, handleRateCallback, getAllRates, formatAllRates } from "../../features/rates/rate.handler";
 import {
   handleSubscribe,
   handleSubscribeCurrency,
@@ -23,6 +23,16 @@ import {
   handleTimezoneRegion,
   handleTimezoneCallback,
 } from "../../features/timezone/timezone.handler";
+import {
+  handleMainMenu,
+  handleMenuCallback,
+  handleSettingsMenu,
+  handleStatsMenu,
+  handleHelpMenu,
+  handleHelpCommands,
+  handleHelpFaq,
+} from "../../features/menu/menu.handler";
+import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 
 // Загружаем переменные из .env
@@ -42,12 +52,65 @@ bot.command("start", async (ctx) => {
 /subscribe — ежедневная рассылка курса
 /unsubscribe — отключить рассылку
 /subscriptions — список подписок
-/set_timezone — установить часовой пояс`
+/set_timezone — установить часовой пояс
+
+💡 <b>Совет:</b> Используй /menu для быстрого доступа ко всем функциям!`,
+    { parse_mode: "HTML" }
   );
+});
+
+// Команда /menu - главное меню
+bot.command("menu", handleMainMenu);
+
+// Команда /help - помощь
+bot.command("help", async (ctx) => {
+  await handleHelpMenu(ctx);
 });
 
 // Команда /rate
 bot.command("rate", handleRate);
+
+// Обработка "Все валюты" - должен быть перед handleRateCallback
+bot.callbackQuery("rate_all", async (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
+  
+  // Проверяем, не находимся ли мы уже в разделе "Все валюты"
+  const currentBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInAllCurrencies = currentBreadcrumbs.includes(NAVIGATION_LEVELS.ALL_CURRENCIES);
+  
+  // Добавляем уровень в хлебные крошки только если мы еще не в разделе "Все валюты"
+  if (!isAlreadyInAllCurrencies) {
+    NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.ALL_CURRENCIES);
+  }
+  
+  const rates = await getAllRates();
+  
+  // Создаем красивую клавиатуру
+  const keyboard = new InlineKeyboard()
+    .text("🔄 Обновить", "rate_all")
+    .row();
+  
+  // Добавляем навигационные кнопки
+  const navBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  if (navBreadcrumbs.length > 1) {
+    keyboard.text("🔙 Назад", "nav_back");
+  }
+  keyboard.text("🏠 Главное меню", "menu_main");
+  
+  const formattedBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  
+  await ctx.reply(
+    `${formattedBreadcrumbs}${formatAllRates(rates)}`,
+    {
+      reply_markup: keyboard,
+      parse_mode: "HTML"
+    }
+  );
+});
+
 bot.on("callback_query:data", handleRateCallback);
 
 // Обработка нажатий на кнопки подписки
@@ -86,6 +149,91 @@ bot.callbackQuery(/^tz_[A-Za-z]+\/[A-Za-z_]+$/, async (ctx) => {
 
 // Обработка текстового ввода для поиска часовых поясов
 bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
+
+// Обработка callback-запросов главного меню
+bot.callbackQuery(/^menu_/, handleMenuCallback);
+
+// Обработка кнопки "Назад"
+bot.callbackQuery("nav_back", async (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  await ctx.answerCallbackQuery();
+  
+  // Удаляем последний уровень из хлебных крошек
+  NavigationManager.removeLastBreadcrumb(chatId);
+  
+  // Получаем предыдущий уровень
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  
+  if (breadcrumbs.length === 0) {
+    // Если нет хлебных крошек, возвращаемся в главное меню
+    await handleMainMenu(ctx);
+  } else {
+    // Определяем, куда вернуться на основе последнего уровня
+    const lastLevel = breadcrumbs[breadcrumbs.length - 1];
+    
+    switch (lastLevel) {
+      case NAVIGATION_LEVELS.MAIN:
+        await handleMainMenu(ctx);
+        break;
+      case NAVIGATION_LEVELS.RATES:
+        await handleRate(ctx);
+        break;
+      case NAVIGATION_LEVELS.ALL_CURRENCIES:
+        await handleRate(ctx);
+        break;
+      case NAVIGATION_LEVELS.SUBSCRIPTIONS:
+        await handleListSubscriptions(ctx);
+        break;
+      case NAVIGATION_LEVELS.SETTINGS:
+        await handleSettingsMenu(ctx);
+        break;
+      case NAVIGATION_LEVELS.STATS:
+        await handleStatsMenu(ctx);
+        break;
+      case NAVIGATION_LEVELS.HELP:
+        await handleHelpMenu(ctx);
+        break;
+      case "Команды":
+      case "FAQ":
+        await handleHelpMenu(ctx);
+        break;
+      default:
+        await handleMainMenu(ctx);
+    }
+  }
+});
+
+bot.callbackQuery(/^settings_/, async (ctx) => {
+  const data = ctx.callbackQuery?.data;
+  if (data === "settings_timezone") {
+    await handleSetTimezone(ctx);
+  } else if (data === "settings_notifications") {
+    await ctx.reply("🔔 Настройки уведомлений пока в разработке");
+  }
+  await ctx.answerCallbackQuery();
+});
+bot.callbackQuery(/^help_/, async (ctx) => {
+  const data = ctx.callbackQuery?.data;
+  if (data === "help_commands") {
+    await handleHelpCommands(ctx);
+  } else if (data === "help_faq") {
+    await handleHelpFaq(ctx);
+  }
+  await ctx.answerCallbackQuery();
+});
+
+// Обработка callback-запросов для подписок
+bot.callbackQuery("menu_subscribe", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await handleSubscribe(ctx);
+});
+
+bot.callbackQuery("menu_unsubscribe", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await handleUnsubscribe(ctx);
+});
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);
