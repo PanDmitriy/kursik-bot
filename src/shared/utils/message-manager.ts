@@ -1,74 +1,75 @@
 import { Context } from "grammy";
 
-// Хранилище для отслеживания сообщений интерфейса часовых поясов
-const timezoneMessages = new Map<number, number[]>();
+// Хранилище для отслеживания основного сообщения интерфейса часовых поясов
+const timezoneInterfaceMessages = new Map<number, number>();
 
 /**
- * Добавить ID сообщения в список для отслеживания
+ * Установить основное сообщение интерфейса для чата
  */
-export function trackTimezoneMessage(chatId: number, messageId: number) {
-  if (!timezoneMessages.has(chatId)) {
-    timezoneMessages.set(chatId, []);
-  }
-  timezoneMessages.get(chatId)!.push(messageId);
+export function setTimezoneInterfaceMessage(chatId: number, messageId: number) {
+  timezoneInterfaceMessages.set(chatId, messageId);
 }
 
 /**
- * Удалить все отслеживаемые сообщения интерфейса часовых поясов
+ * Получить основное сообщение интерфейса для чата
  */
-export async function clearTimezoneMessages(ctx: Context) {
-  const chatId = ctx.chat?.id;
-  if (!chatId) return;
-
-  const messageIds = timezoneMessages.get(chatId);
-  if (!messageIds || messageIds.length === 0) return;
-
-  // Удаляем сообщения с задержкой, чтобы избежать ошибок API
-  for (const messageId of messageIds) {
-    try {
-      await ctx.api.deleteMessage(chatId, messageId);
-      // Небольшая задержка между удалениями
-      await new Promise(resolve => setTimeout(resolve, 100));
-    } catch (error) {
-      // Игнорируем ошибки удаления (сообщение уже удалено или недоступно)
-      console.log(`Failed to delete message ${messageId}:`, error);
-    }
-  }
-
-  // Очищаем список сообщений
-  timezoneMessages.delete(chatId);
+export function getTimezoneInterfaceMessage(chatId: number): number | undefined {
+  return timezoneInterfaceMessages.get(chatId);
 }
 
 /**
- * Очистить список отслеживаемых сообщений без удаления
+ * Очистить основное сообщение интерфейса для чата
  */
-export function clearTimezoneMessagesList(chatId: number) {
-  timezoneMessages.delete(chatId);
+export function clearTimezoneInterfaceMessage(chatId: number) {
+  timezoneInterfaceMessages.delete(chatId);
 }
 
 /**
- * Отправить сообщение и отследить его для последующего удаления
+ * Отправить новое сообщение интерфейса и запомнить его ID
  */
-export async function sendTrackedMessage(
+export async function sendTimezoneInterfaceMessage(
   ctx: Context, 
   text: string, 
   options: any = {}
 ) {
   const message = await ctx.reply(text, options);
-  trackTimezoneMessage(ctx.chat!.id, message.message_id);
+  setTimezoneInterfaceMessage(ctx.chat!.id, message.message_id);
   return message;
 }
 
 /**
- * Редактировать сообщение и отследить его
+ * Обновить существующее сообщение интерфейса или создать новое
  */
-export async function editTrackedMessage(
+export async function updateTimezoneInterfaceMessage(
   ctx: Context,
-  messageId: number,
   text: string,
   options: any = {}
 ) {
-  const message = await ctx.api.editMessageText(ctx.chat!.id, messageId, text, options);
-  trackTimezoneMessage(ctx.chat!.id, messageId);
+  const chatId = ctx.chat!.id;
+  const existingMessageId = getTimezoneInterfaceMessage(chatId);
+
+  if (existingMessageId) {
+    try {
+      // Пытаемся отредактировать существующее сообщение
+      await ctx.api.editMessageText(chatId, existingMessageId, text, options);
+      return { message_id: existingMessageId };
+    } catch (error) {
+      // Если редактирование не удалось (например, сообщение было удалено),
+      // создаем новое сообщение
+      console.log(`Failed to edit message ${existingMessageId}, creating new one:`, error);
+      clearTimezoneInterfaceMessage(chatId);
+    }
+  }
+
+  // Создаем новое сообщение
+  const message = await ctx.reply(text, options);
+  setTimezoneInterfaceMessage(chatId, message.message_id);
   return message;
+}
+
+/**
+ * Завершить интерфейс часовых поясов и очистить отслеживание
+ */
+export function finishTimezoneInterface(chatId: number) {
+  clearTimezoneInterfaceMessage(chatId);
 }

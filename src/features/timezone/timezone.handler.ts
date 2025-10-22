@@ -3,16 +3,12 @@ import tzLookup from "tz-lookup";
 import { setUserTimezone } from "../../entities/user/user.repo";
 import { TimezoneService } from "../../shared/services/timezone.service";
 import { 
-  clearTimezoneMessages, 
-  sendTrackedMessage, 
-  editTrackedMessage,
-  clearTimezoneMessagesList 
+  sendTimezoneInterfaceMessage,
+  updateTimezoneInterfaceMessage,
+  finishTimezoneInterface
 } from "../../shared/utils/message-manager";
 
 export async function handleSetTimezone(ctx: Context) {
-  // Очищаем предыдущие сообщения интерфейса
-  await clearTimezoneMessages(ctx);
-
   const keyboard = new Keyboard()
     .requestLocation("📍 Отправить геолокацию")
     .row()
@@ -21,7 +17,7 @@ export async function handleSetTimezone(ctx: Context) {
     .text("🔍 Поиск часового пояса")
     .resized();
 
-  await sendTrackedMessage(
+  await sendTimezoneInterfaceMessage(
     ctx,
     `🌍 <b>Настройка часового пояса</b>
 
@@ -48,7 +44,7 @@ export async function handleLocation(ctx: Context) {
     const timezone = tzLookup(location.latitude, location.longitude);
     
     if (!TimezoneService.isValidTimezone(timezone)) {
-      await sendTrackedMessage(ctx, "⚠️ Не удалось определить корректный часовой пояс по координатам.");
+      await updateTimezoneInterfaceMessage(ctx, "⚠️ Не удалось определить корректный часовой пояс по координатам.");
       return;
     }
 
@@ -57,8 +53,10 @@ export async function handleLocation(ctx: Context) {
 
     const currentTime = TimezoneService.getCurrentTimeInTimezone(timezone);
     
-    await sendTrackedMessage(
-      ctx,
+    // Завершаем интерфейс и отправляем финальное сообщение
+    finishTimezoneInterface(chatId);
+    
+    await ctx.reply(
       `✅ <b>Часовой пояс установлен!</b>
 
 🌍 <b>${timezoneInfo?.displayName}</b>
@@ -68,7 +66,7 @@ export async function handleLocation(ctx: Context) {
       { parse_mode: "HTML" }
     );
   } catch (err) {
-    await sendTrackedMessage(ctx, "⚠️ Не удалось определить часовой пояс по координатам. Попробуй другой способ.");
+    await updateTimezoneInterfaceMessage(ctx, "⚠️ Не удалось определить часовой пояс по координатам. Попробуй другой способ.");
   }
 }
 
@@ -97,7 +95,7 @@ export async function handleManualTimezone(ctx: Context) {
   // Добавляем кнопку для просмотра всех регионов
   keyboard.row({ text: "🗂 Все регионы", callback_data: "tz_regions" });
 
-  await sendTrackedMessage(
+  await updateTimezoneInterfaceMessage(
     ctx,
     `🗂 <b>Популярные часовые пояса</b>
 
@@ -110,7 +108,7 @@ export async function handleManualTimezone(ctx: Context) {
 }
 
 export async function handleTimezoneSearch(ctx: Context) {
-  await sendTrackedMessage(
+  await updateTimezoneInterfaceMessage(
     ctx,
     `🔍 <b>Поиск часового пояса</b>
 
@@ -130,7 +128,7 @@ export async function handleTimezoneSearchQuery(ctx: Context) {
   const results = TimezoneService.searchTimezones(query);
   
   if (results.length === 0) {
-    await sendTrackedMessage(
+    await updateTimezoneInterfaceMessage(
       ctx,
       `🔍 <b>Результаты поиска</b>
 
@@ -151,7 +149,7 @@ export async function handleTimezoneSearchQuery(ctx: Context) {
     });
   }
 
-  await sendTrackedMessage(
+  await updateTimezoneInterfaceMessage(
     ctx,
     `🔍 <b>Результаты поиска</b>
 
@@ -176,7 +174,7 @@ export async function handleTimezoneRegions(ctx: Context) {
   
   keyboard.row({ text: "🔙 Назад к популярным", callback_data: "tz_popular" });
 
-  await sendTrackedMessage(
+  await updateTimezoneInterfaceMessage(
     ctx,
     `🗂 <b>Все регионы</b>
 
@@ -193,7 +191,7 @@ export async function handleTimezoneRegion(ctx: Context, regionName: string) {
   const timezones = regions[regionName];
   
   if (!timezones) {
-    await sendTrackedMessage(ctx, "⚠️ Регион не найден.");
+    await updateTimezoneInterfaceMessage(ctx, "⚠️ Регион не найден.");
     return;
   }
 
@@ -212,7 +210,7 @@ export async function handleTimezoneRegion(ctx: Context, regionName: string) {
   
   keyboard.row({ text: "🔙 Назад к регионам", callback_data: "tz_regions" });
 
-  await sendTrackedMessage(
+  await updateTimezoneInterfaceMessage(
     ctx,
     `🌍 <b>${regionName}</b>
 
@@ -242,10 +240,10 @@ export async function handleTimezoneCallback(ctx: Context, timezoneId: string) {
   setUserTimezone(chatId, timezoneId);
   const currentTime = TimezoneService.getCurrentTimeInTimezone(timezoneId);
 
-  // Очищаем все сообщения интерфейса часовых поясов
-  await clearTimezoneMessages(ctx);
+  // Завершаем интерфейс часовых поясов
+  finishTimezoneInterface(chatId);
 
-  // Отправляем финальное сообщение (не отслеживаем его для удаления)
+  // Отправляем финальное сообщение
   await ctx.reply(
     `✅ <b>Часовой пояс установлен!</b>
 
@@ -272,10 +270,10 @@ export async function handleTimezoneText(ctx: Context) {
       setUserTimezone(chatId, timezone);
       const currentTime = TimezoneService.getCurrentTimeInTimezone(timezone);
       
-      // Очищаем все сообщения интерфейса часовых поясов
-      await clearTimezoneMessages(ctx);
+      // Завершаем интерфейс часовых поясов
+      finishTimezoneInterface(chatId);
       
-      // Отправляем финальное сообщение (не отслеживаем его для удаления)
+      // Отправляем финальное сообщение
       await ctx.reply(
         `✅ <b>Часовой пояс установлен!</b>
 
