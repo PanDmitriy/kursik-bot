@@ -3,20 +3,21 @@ import db from "../../shared/db/db";
 export interface Subscription {
   currency: string;
   hour: number;
+  minute: number;
   timezone: string;
 }
 
-export function addSubscription(chatId: number, currency: string, hour: number, timezone = "Europe/Minsk") {
+export function addSubscription(chatId: number, currency: string, hour: number, minute: number, timezone = "Europe/Minsk") {
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO subscriptions (chat_id, currency, hour, timezone)
-    VALUES (?, ?, ?, ?)
+    INSERT OR REPLACE INTO subscriptions (chat_id, currency, hour, minute, timezone)
+    VALUES (?, ?, ?, ?, ?)
   `);
-  stmt.run(chatId, currency, hour, timezone);
+  stmt.run(chatId, currency, hour, minute, timezone);
 }
 
 
 export function getUserSubscriptions(chatId: number): Subscription[] {
-    return db.prepare(`SELECT currency, hour, timezone FROM subscriptions WHERE chat_id = ?`).all(chatId) as Subscription[];
+    return db.prepare(`SELECT currency, hour, minute, timezone FROM subscriptions WHERE chat_id = ?`).all(chatId) as Subscription[];
 }
 
 export function removeSubscription(chatId: number, currency: string): void {

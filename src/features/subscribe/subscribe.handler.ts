@@ -2,6 +2,9 @@ import { Context, InlineKeyboard } from "grammy";
 import { AVAILABLE_CURRENCIES } from "../rates/rate.handler";
 import { addSubscription } from "../../entities/user/user.repo";
 
+// Ожидание ввода времени для выбранной валюты по chatId
+const pendingTimeByChatId = new Map<number, string>();
+
 export async function handleSubscribe(ctx: Context) {
   const keyboard = new InlineKeyboard();
 
@@ -19,29 +22,32 @@ export async function handleSubscribeCurrency(ctx: Context, next: () => Promise<
   if (!data?.startsWith("sub_currency_")) return next();
 
   const currency = data.replace("sub_currency_", "");
-
-  const keyboard = new InlineKeyboard()
-    .text("09:00", `sub_time_${currency}_9`)
-    .text("12:00", `sub_time_${currency}_12`)
-    .text("18:00", `sub_time_${currency}_18`);
-
   await ctx.answerCallbackQuery();
-  await ctx.reply(`Выбери время рассылки для ${currency}:`, {
-    reply_markup: keyboard,
-  });
+  await ctx.reply(
+    `Введи время для ${currency} в формате HH:mm (например, 09:00 или 18:45).`,
+  );
+  if (ctx.chat?.id) {
+    pendingTimeByChatId.set(ctx.chat.id, currency);
+  }
 }
 
 export async function handleSubscribeTime(ctx: Context, next: () => Promise<void>) {
-  const data = ctx.callbackQuery?.data;
-  if (!data?.startsWith("sub_time_")) return next();
+  const text = ctx.message?.text?.trim();
+  const chatId = ctx.chat?.id;
+  if (!text || !chatId) return next();
 
-  const [, , currency, hourStr] = data.split("_");
-  const hour = parseInt(hourStr);
+  const pendingCurrency = pendingTimeByChatId.get(chatId);
+  if (!pendingCurrency) return next();
 
-  if (ctx.chat?.id && currency && hour) {
-    addSubscription(ctx.chat.id, currency, hour, "Europe/Minsk");
-    await ctx.answerCallbackQuery({ text: "Подписка оформлена!" });
-    await ctx.reply(`✅ Подписка: ${currency} в ${hour.toString().padStart(2, "0")}:00 по Минску`);
-    return next();
-  }
+  const match = text.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return next();
+
+  const hour = parseInt(match[1], 10);
+  const minute = parseInt(match[2], 10);
+
+  addSubscription(chatId, pendingCurrency, hour, minute, "Europe/Minsk");
+  await ctx.reply(
+    `✅ Подписка: ${pendingCurrency} в ${match[0]} по Минску. Измени часовой пояс через /set_timezone`
+  );
+  pendingTimeByChatId.delete(chatId);
 }
