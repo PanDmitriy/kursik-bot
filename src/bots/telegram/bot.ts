@@ -77,18 +77,24 @@ bot.callbackQuery("rate_all", async (ctx) => {
 
   await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
   
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.ALL_CURRENCIES);
+  // Проверяем, не находимся ли мы уже в разделе "Все валюты"
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInAllCurrencies = breadcrumbs.includes(NAVIGATION_LEVELS.ALL_CURRENCIES);
+  
+  // Добавляем уровень в хлебные крошки только если мы еще не в разделе "Все валюты"
+  if (!isAlreadyInAllCurrencies) {
+    NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.ALL_CURRENCIES);
+  }
   
   const rates = await getAllRates();
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
     { text: "🔄 Обновить", callback_data: "rate_all" }
   ]);
   
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
   
   await ctx.reply(
-    `${breadcrumbs}${formatAllRates(rates)}`,
+    `${currentBreadcrumbs}${formatAllRates(rates)}`,
     {
       reply_markup: navKeyboard,
       parse_mode: "HTML"
@@ -163,6 +169,9 @@ bot.callbackQuery("nav_back", async (ctx) => {
         await handleMainMenu(ctx);
         break;
       case NAVIGATION_LEVELS.RATES:
+        await handleRate(ctx);
+        break;
+      case NAVIGATION_LEVELS.ALL_CURRENCIES:
         await handleRate(ctx);
         break;
       case NAVIGATION_LEVELS.SUBSCRIPTIONS:

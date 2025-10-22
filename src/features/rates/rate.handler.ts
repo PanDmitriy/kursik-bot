@@ -58,27 +58,29 @@ export async function handleRate(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.RATES);
-
-  const keyboard = new InlineKeyboard();
-
-  for (const code of AVAILABLE_CURRENCIES) {
-    keyboard.text(code, `rate_${code}`);
+  // Проверяем, не находимся ли мы уже в меню курсов
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInRates = breadcrumbs.includes(NAVIGATION_LEVELS.RATES);
+  
+  // Добавляем уровень в хлебные крошки только если мы еще не в меню курсов
+  if (!isAlreadyInRates) {
+    NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.RATES);
   }
 
-  // Добавляем кнопку "Все валюты"
-  keyboard.row().text("📊 Все валюты", "rate_all");
-
-  // Добавляем навигационные кнопки
+  // Создаем клавиатуру с кнопками валют и навигацией
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
     { text: "📊 Все валюты", callback_data: "rate_all" }
   ]);
 
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  // Добавляем кнопки валют
+  for (const code of AVAILABLE_CURRENCIES) {
+    navKeyboard.text(code, `rate_${code}`);
+  }
+
+  const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `${breadcrumbs}💰 <b>Курсы валют</b>
+    `${currentBreadcrumbs}💰 <b>Курсы валют</b>
 
 Выберите валюту:`,
     { 
