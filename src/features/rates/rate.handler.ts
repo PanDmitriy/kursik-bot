@@ -134,7 +134,7 @@ ${changeText}
 /**
  * Получить текстовое описание тренда
  */
-function getTrendText(trend: 'up' | 'down' | 'stable'): string {
+function getTrendText(trend?: 'up' | 'down' | 'stable'): string {
   switch (trend) {
     case 'up': return 'Рост';
     case 'down': return 'Падение';

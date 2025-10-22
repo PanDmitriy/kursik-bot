@@ -1,4 +1,4 @@
-import { Bot, Context } from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import { config } from "dotenv";
 import { handleRate, handleRateCallback, getAllRates, formatAllRates } from "../../features/rates/rate.handler";
 import {
@@ -60,6 +60,11 @@ bot.command("start", async (ctx) => {
 
 // Команда /menu - главное меню
 bot.command("menu", handleMainMenu);
+
+// Команда /help - помощь
+bot.command("help", async (ctx) => {
+  await handleHelpMenu(ctx);
+});
 
 // Команда /rate
 bot.command("rate", handleRate);
