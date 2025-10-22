@@ -68,6 +68,22 @@ bot.command("help", async (ctx) => {
 
 // Команда /rate
 bot.command("rate", handleRate);
+
+// Обработка "Все валюты" - должен быть перед handleRateCallback
+bot.callbackQuery("rate_all", async (ctx) => {
+  await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
+  
+  const rates = await getAllRates();
+  const keyboard = new InlineKeyboard()
+    .text("🔄 Обновить", "rate_all")
+    .text("🏠 Главное меню", "menu_main");
+  
+  await ctx.reply(formatAllRates(rates), {
+    reply_markup: keyboard,
+    parse_mode: "HTML"
+  });
+});
+
 bot.on("callback_query:data", handleRateCallback);
 
 // Обработка нажатий на кнопки подписки
@@ -110,20 +126,6 @@ bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
 // Обработка callback-запросов главного меню
 bot.callbackQuery(/^menu_/, handleMenuCallback);
 
-// Обработка "Все валюты"
-bot.callbackQuery("rate_all", async (ctx) => {
-  await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
-  
-  const rates = await getAllRates();
-  const keyboard = new InlineKeyboard()
-    .text("🔄 Обновить", "rate_all")
-    .text("🏠 Главное меню", "menu_main");
-  
-  await ctx.reply(formatAllRates(rates), {
-    reply_markup: keyboard,
-    parse_mode: "HTML"
-  });
-});
 bot.callbackQuery(/^settings_/, async (ctx) => {
   const data = ctx.callbackQuery?.data;
   if (data === "settings_timezone") {

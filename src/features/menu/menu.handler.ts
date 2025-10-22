@@ -4,6 +4,7 @@ import { handleSubscribe } from "../subscribe/subscribe.handler";
 import { handleListSubscriptions } from "../subscribe/list.handler";
 import { handleUnsubscribe } from "../subscribe/unsubscribe.handler";
 import { handleSetTimezone } from "../timezone/timezone.handler";
+import { getUserSubscriptions, getUserTimezone } from "../../entities/user/user.repo";
 
 /**
  * Главное меню бота с основными функциями
@@ -39,6 +40,10 @@ export async function handleMenuCallback(ctx: Context, next: () => Promise<void>
   await ctx.answerCallbackQuery();
 
   switch (data) {
+    case "menu_main":
+      await handleMainMenu(ctx);
+      break;
+      
     case "menu_rates":
       await handleRate(ctx);
       break;
@@ -197,5 +202,3 @@ USD, EUR, RUB, CNY, PLN`,
   );
 }
 
-// Импорты для функций, которые используются в меню
-import { getUserSubscriptions, getUserTimezone } from "../../entities/user/user.repo";
