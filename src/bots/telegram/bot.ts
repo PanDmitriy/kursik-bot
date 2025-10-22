@@ -78,8 +78,8 @@ bot.callbackQuery("rate_all", async (ctx) => {
   await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
   
   // Проверяем, не находимся ли мы уже в разделе "Все валюты"
-  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
-  const isAlreadyInAllCurrencies = breadcrumbs.includes(NAVIGATION_LEVELS.ALL_CURRENCIES);
+  const currentBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInAllCurrencies = currentBreadcrumbs.includes(NAVIGATION_LEVELS.ALL_CURRENCIES);
   
   // Добавляем уровень в хлебные крошки только если мы еще не в разделе "Все валюты"
   if (!isAlreadyInAllCurrencies) {
@@ -87,16 +87,25 @@ bot.callbackQuery("rate_all", async (ctx) => {
   }
   
   const rates = await getAllRates();
-  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
-    { text: "🔄 Обновить", callback_data: "rate_all" }
-  ]);
   
-  const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  // Создаем красивую клавиатуру
+  const keyboard = new InlineKeyboard()
+    .text("🔄 Обновить", "rate_all")
+    .row();
+  
+  // Добавляем навигационные кнопки
+  const navBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  if (navBreadcrumbs.length > 1) {
+    keyboard.text("🔙 Назад", "nav_back");
+  }
+  keyboard.text("🏠 Главное меню", "menu_main");
+  
+  const formattedBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
   
   await ctx.reply(
-    `${currentBreadcrumbs}${formatAllRates(rates)}`,
+    `${formattedBreadcrumbs}${formatAllRates(rates)}`,
     {
-      reply_markup: navKeyboard,
+      reply_markup: keyboard,
       parse_mode: "HTML"
     }
   );
