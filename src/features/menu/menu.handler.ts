@@ -86,16 +86,16 @@ export async function handleSettingsMenu(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.SETTINGS);
+  // Проверяем, не находимся ли мы уже в меню настроек
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInSettings = breadcrumbs.includes(NAVIGATION_LEVELS.SETTINGS);
+  
+  // Добавляем уровень в хлебные крошки только если мы еще не в меню настроек
+  if (!isAlreadyInSettings) {
+    NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.SETTINGS);
+  }
 
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
-
-  // Создаем клавиатуру с кнопками настроек и навигацией
-  const keyboard = new InlineKeyboard()
-    .text("🌍 Часовой пояс", "settings_timezone")
-    .row()
-    .text("🔔 Уведомления", "settings_notifications");
+  const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   // Добавляем навигационные кнопки
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
@@ -104,7 +104,7 @@ export async function handleSettingsMenu(ctx: Context) {
   ]);
 
   await ctx.reply(
-    `${breadcrumbs}⚙️ <b>Настройки</b>
+    `${currentBreadcrumbs}⚙️ <b>Настройки</b>
 
 Выбери что хочешь настроить:`,
     { 
@@ -153,10 +153,16 @@ export async function handleHelpMenu(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.HELP);
+  // Проверяем, не находимся ли мы уже в меню помощи
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInHelp = breadcrumbs.includes(NAVIGATION_LEVELS.HELP);
+  
+  // Добавляем уровень в хлебные крошки только если мы еще не в меню помощи
+  if (!isAlreadyInHelp) {
+    NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.HELP);
+  }
 
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   // Создаем клавиатуру с кнопками помощи и навигацией
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
@@ -165,7 +171,7 @@ export async function handleHelpMenu(ctx: Context) {
   ]);
 
   await ctx.reply(
-    `${breadcrumbs}ℹ️ <b>Помощь</b>
+    `${currentBreadcrumbs}ℹ️ <b>Помощь</b>
 
 Выбери что тебя интересует:`,
     { 
@@ -182,16 +188,22 @@ export async function handleHelpCommands(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, "Команды");
+  // Проверяем, не находимся ли мы уже в разделе команд
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInCommands = breadcrumbs.includes("Команды");
+  
+  // Добавляем уровень в хлебные крошки только если мы еще не в разделе команд
+  if (!isAlreadyInCommands) {
+    NavigationManager.addBreadcrumb(chatId, "Команды");
+  }
 
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
     { text: "❓ FAQ", callback_data: "help_faq" }
   ]);
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `${breadcrumbs}📋 <b>Доступные команды</b>
+    `${currentBreadcrumbs}📋 <b>Доступные команды</b>
 
 <b>Основные:</b>
 /start — запуск бота
@@ -219,16 +231,22 @@ export async function handleHelpFaq(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, "FAQ");
+  // Проверяем, не находимся ли мы уже в разделе FAQ
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  const isAlreadyInFaq = breadcrumbs.includes("FAQ");
+  
+  // Добавляем уровень в хлебные крошки только если мы еще не в разделе FAQ
+  if (!isAlreadyInFaq) {
+    NavigationManager.addBreadcrumb(chatId, "FAQ");
+  }
 
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
     { text: "📋 Команды", callback_data: "help_commands" }
   ]);
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `${breadcrumbs}❓ <b>Часто задаваемые вопросы</b>
+    `${currentBreadcrumbs}❓ <b>Часто задаваемые вопросы</b>
 
 <b>Как работает подписка?</b>
 • Выбери валюту и время уведомления
