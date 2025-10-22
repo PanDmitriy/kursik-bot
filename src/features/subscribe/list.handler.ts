@@ -12,7 +12,7 @@ export async function handleListSubscriptions(ctx: Context) {
   }
 
   const lines = subs.map(
-    (s) => `• ${s.currency} — ${s.hour.toString().padStart(2, "0")}:00`
+    (s) => `• ${s.currency} — ${s.hour.toString().padStart(2, "0")}:${(s.minute ?? 0).toString().padStart(2, "0")}`
   );
   const text = `📋 Твои подписки:\n\n${lines.join("\n")}`;
 

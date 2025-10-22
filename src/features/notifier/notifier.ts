@@ -18,9 +18,9 @@ export function startNotifier(bot: Bot) {
     for (const chatId of allChatIds) {
       const subs: Subscription[] = getUserSubscriptions(chatId);
 
-        for (const { currency, hour, timezone } of subs) {
+        for (const { currency, hour, minute, timezone } of subs) {
           const now = DateTime.now().setZone(timezone);
-          if (now.hour === hour) {
+          if (now.hour === hour && now.minute === minute) {
             const result = await getExchangeRate(currency);
             if (!result) continue;
       

@@ -11,9 +11,9 @@ export async function handleUnsubscribe(ctx: Context) {
   }
 
   const keyboard = new InlineKeyboard();
-  for (const { currency, hour } of subs) {
+  for (const { currency, hour, minute } of subs) {
     keyboard.text(
-      `${currency} — ${hour.toString().padStart(2, "0")}:00`,
+      `${currency} — ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
       `unsub_${currency}`
     );
   }

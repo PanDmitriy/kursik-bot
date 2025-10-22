@@ -48,7 +48,8 @@ bot.on("callback_query:data", handleRateCallback);
 // Обработка нажатий на кнопки подписки
 bot.command("subscribe", handleSubscribe);
 bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
-bot.callbackQuery(/sub_time_/, handleSubscribeTime);
+// Обработка текстового ввода времени HH:mm
+bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
 
 // Обработка нажатий на кнопки отписки
 bot.command("unsubscribe", handleUnsubscribe);
