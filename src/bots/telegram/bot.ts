@@ -32,6 +32,7 @@ import {
   handleHelpCommands,
   handleHelpFaq,
 } from "../../features/menu/menu.handler";
+import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 
 // Загружаем переменные из .env
@@ -71,17 +72,28 @@ bot.command("rate", handleRate);
 
 // Обработка "Все валюты" - должен быть перед handleRateCallback
 bot.callbackQuery("rate_all", async (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
   await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
   
-  const rates = await getAllRates();
-  const keyboard = new InlineKeyboard()
-    .text("🔄 Обновить", "rate_all")
-    .text("🏠 Главное меню", "menu_main");
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.ALL_CURRENCIES);
   
-  await ctx.reply(formatAllRates(rates), {
-    reply_markup: keyboard,
-    parse_mode: "HTML"
-  });
+  const rates = await getAllRates();
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
+    { text: "🔄 Обновить", callback_data: "rate_all" }
+  ]);
+  
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  
+  await ctx.reply(
+    `${breadcrumbs}${formatAllRates(rates)}`,
+    {
+      reply_markup: navKeyboard,
+      parse_mode: "HTML"
+    }
+  );
 });
 
 bot.on("callback_query:data", handleRateCallback);
@@ -125,6 +137,51 @@ bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
 
 // Обработка callback-запросов главного меню
 bot.callbackQuery(/^menu_/, handleMenuCallback);
+
+// Обработка кнопки "Назад"
+bot.callbackQuery("nav_back", async (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  await ctx.answerCallbackQuery();
+  
+  // Удаляем последний уровень из хлебных крошек
+  NavigationManager.removeLastBreadcrumb(chatId);
+  
+  // Получаем предыдущий уровень
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  
+  if (breadcrumbs.length === 0) {
+    // Если нет хлебных крошек, возвращаемся в главное меню
+    await handleMainMenu(ctx);
+  } else {
+    // Определяем, куда вернуться на основе последнего уровня
+    const lastLevel = breadcrumbs[breadcrumbs.length - 1];
+    
+    switch (lastLevel) {
+      case NAVIGATION_LEVELS.MAIN:
+        await handleMainMenu(ctx);
+        break;
+      case NAVIGATION_LEVELS.RATES:
+        await handleRate(ctx);
+        break;
+      case NAVIGATION_LEVELS.SUBSCRIPTIONS:
+        await handleListSubscriptions(ctx);
+        break;
+      case NAVIGATION_LEVELS.SETTINGS:
+        await handleSettingsMenu(ctx);
+        break;
+      case NAVIGATION_LEVELS.STATS:
+        await handleStatsMenu(ctx);
+        break;
+      case NAVIGATION_LEVELS.HELP:
+        await handleHelpMenu(ctx);
+        break;
+      default:
+        await handleMainMenu(ctx);
+    }
+  }
+});
 
 bot.callbackQuery(/^settings_/, async (ctx) => {
   const data = ctx.callbackQuery?.data;

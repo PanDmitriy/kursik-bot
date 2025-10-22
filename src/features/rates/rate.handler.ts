@@ -1,5 +1,6 @@
 import { Context, InlineKeyboard } from "grammy";
 import { getExchangeRate, getEnhancedExchangeRate, EnhancedRateData } from "../../shared/api/exchange";
+import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 export const AVAILABLE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "PLN"];
 
@@ -54,15 +55,37 @@ ${lines.join('\n')}
 }
 
 export async function handleRate(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  // Добавляем уровень в хлебные крошки
+  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.RATES);
+
   const keyboard = new InlineKeyboard();
 
   for (const code of AVAILABLE_CURRENCIES) {
     keyboard.text(code, `rate_${code}`);
   }
 
-  await ctx.reply("Выберите валюту:", {
-    reply_markup: keyboard,
-  });
+  // Добавляем кнопку "Все валюты"
+  keyboard.row().text("📊 Все валюты", "rate_all");
+
+  // Добавляем навигационные кнопки
+  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
+    { text: "📊 Все валюты", callback_data: "rate_all" }
+  ]);
+
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+
+  await ctx.reply(
+    `${breadcrumbs}💰 <b>Курсы валют</b>
+
+Выберите валюту:`,
+    { 
+      reply_markup: navKeyboard,
+      parse_mode: "HTML"
+    }
+  );
 }
 
 // Обработка нажатий на кнопки
@@ -78,18 +101,28 @@ export async function handleRateCallback(ctx: Context, next: () => Promise<void>
   if (result) {
     await ctx.answerCallbackQuery(); // убирает "загрузка..."
     
-    // Создаем интерактивную клавиатуру
-    const keyboard = new InlineKeyboard()
-      .text("🔄 Обновить", `rate_${currency}`)
-      .text("📊 Все валюты", "rate_all")
-      .row()
-      .text("🔔 Подписаться", `sub_currency_${currency}`)
-      .text("🏠 Главное меню", "menu_main");
+    const chatId = ctx.chat?.id;
+    if (chatId) {
+      // Добавляем уровень в хлебные крошки
+      NavigationManager.addBreadcrumb(chatId, `${NAVIGATION_LEVELS.RATE_DETAIL} ${currency}`);
+    }
     
-    await ctx.reply(formatEnhancedRate(result), {
-      reply_markup: keyboard,
-      parse_mode: "HTML"
-    });
+    // Создаем интерактивную клавиатуру с навигацией
+    const navKeyboard = NavigationManager.createNavigationKeyboard(chatId!, [
+      { text: "🔄 Обновить", callback_data: `rate_${currency}` },
+      { text: "📊 Все валюты", callback_data: "rate_all" },
+      { text: "🔔 Подписаться", callback_data: `sub_currency_${currency}` }
+    ]);
+    
+    const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId!);
+    
+    await ctx.reply(
+      `${breadcrumbs}${formatEnhancedRate(result)}`,
+      {
+        reply_markup: navKeyboard,
+        parse_mode: "HTML"
+      }
+    );
   } else {
     await ctx.answerCallbackQuery({ text: "Ошибка получения курса", show_alert: true });
   }

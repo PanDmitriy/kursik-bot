@@ -5,11 +5,19 @@ import { handleListSubscriptions } from "../subscribe/list.handler";
 import { handleUnsubscribe } from "../subscribe/unsubscribe.handler";
 import { handleSetTimezone } from "../timezone/timezone.handler";
 import { getUserSubscriptions, getUserTimezone } from "../../entities/user/user.repo";
+import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 /**
  * Главное меню бота с основными функциями
  */
 export async function handleMainMenu(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  // Очищаем хлебные крошки и устанавливаем главное меню
+  NavigationManager.clearBreadcrumbs(chatId);
+  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.MAIN);
+
   const keyboard = new InlineKeyboard()
     .text("💰 Курсы валют", "menu_rates")
     .row()
@@ -19,8 +27,10 @@ export async function handleMainMenu(ctx: Context) {
     .text("📊 Статистика", "menu_stats")
     .text("ℹ️ Помощь", "menu_help");
 
+  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+
   await ctx.reply(
-    `🏠 <b>Главное меню</b>
+    `${breadcrumbs}🏠 <b>Главное меню</b>
 
 Выбери нужную функцию:`,
     { 
