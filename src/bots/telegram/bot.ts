@@ -1,6 +1,6 @@
 import { Bot, Context } from "grammy";
 import { config } from "dotenv";
-import { handleRate, handleRateCallback } from "../../features/rates/rate.handler";
+import { handleRate, handleRateCallback, getAllRates, formatAllRates } from "../../features/rates/rate.handler";
 import {
   handleSubscribe,
   handleSubscribeCurrency,
@@ -104,6 +104,21 @@ bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
 
 // Обработка callback-запросов главного меню
 bot.callbackQuery(/^menu_/, handleMenuCallback);
+
+// Обработка "Все валюты"
+bot.callbackQuery("rate_all", async (ctx) => {
+  await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
+  
+  const rates = await getAllRates();
+  const keyboard = new InlineKeyboard()
+    .text("🔄 Обновить", "rate_all")
+    .text("🏠 Главное меню", "menu_main");
+  
+  await ctx.reply(formatAllRates(rates), {
+    reply_markup: keyboard,
+    parse_mode: "HTML"
+  });
+});
 bot.callbackQuery(/^settings_/, async (ctx) => {
   const data = ctx.callbackQuery?.data;
   if (data === "settings_timezone") {

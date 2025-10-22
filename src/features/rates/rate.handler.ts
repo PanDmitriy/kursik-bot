@@ -1,7 +1,57 @@
 import { Context, InlineKeyboard } from "grammy";
-import { getExchangeRate } from "../../shared/api/exchange";
+import { getExchangeRate, getEnhancedExchangeRate, EnhancedRateData } from "../../shared/api/exchange";
 
 export const AVAILABLE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "PLN"];
+
+/**
+ * Получить курсы всех валют
+ */
+export async function getAllRates(): Promise<EnhancedRateData[]> {
+  const rates: EnhancedRateData[] = [];
+  
+  for (const currency of AVAILABLE_CURRENCIES) {
+    try {
+      const rate = await getEnhancedExchangeRate(currency);
+      if (rate) {
+        rates.push(rate);
+      }
+    } catch (error) {
+      console.error(`Ошибка получения курса ${currency}:`, error);
+    }
+  }
+  
+  return rates;
+}
+
+/**
+ * Форматирование всех курсов
+ */
+export function formatAllRates(rates: EnhancedRateData[]): string {
+  if (rates.length === 0) {
+    return "❌ Не удалось получить курсы валют";
+  }
+  
+  const lines = rates.map(rate => {
+    const { currency, rate: value, scale, change, changePercent, trend } = rate;
+    const trendEmoji = trend === 'up' ? '📈' : trend === 'down' ? '📉' : '➡️';
+    const changeEmoji = trend === 'up' ? '🟢' : trend === 'down' ? '🔴' : '⚪';
+    
+    let changeText = '';
+    if (change !== undefined && changePercent !== undefined) {
+      const changeSign = change > 0 ? '+' : '';
+      changeText = ` ${changeEmoji}${changeSign}${changePercent.toFixed(1)}%`;
+    }
+    
+    return `${trendEmoji} <b>${currency}</b>: ${value.toFixed(4)} BYN${changeText}`;
+  });
+  
+  return `💱 <b>Курсы валют к BYN</b>
+
+${lines.join('\n')}
+
+📅 <b>Обновлено:</b> ${new Date().toLocaleString('ru-RU')}
+🏛️ <b>Источник:</b> НБРБ`;
+}
 
 export async function handleRate(ctx: Context) {
   const keyboard = new InlineKeyboard();
@@ -23,13 +73,72 @@ export async function handleRateCallback(ctx: Context, next: () => Promise<void>
 
   const currency = callbackData.replace("rate_", "");
 
-  const result = await getExchangeRate(currency);
+  const result = await getEnhancedExchangeRate(currency);
 
   if (result) {
-    const { rate, scale } = result;
     await ctx.answerCallbackQuery(); // убирает "загрузка..."
-    await ctx.reply(`💱 ${scale} ${currency} = ${rate.toFixed(4)} BYN (по данным НБРБ)`);
+    
+    // Создаем интерактивную клавиатуру
+    const keyboard = new InlineKeyboard()
+      .text("🔄 Обновить", `rate_${currency}`)
+      .text("📊 Все валюты", "rate_all")
+      .row()
+      .text("🔔 Подписаться", `sub_currency_${currency}`)
+      .text("🏠 Главное меню", "menu_main");
+    
+    await ctx.reply(formatEnhancedRate(result), {
+      reply_markup: keyboard,
+      parse_mode: "HTML"
+    });
   } else {
     await ctx.answerCallbackQuery({ text: "Ошибка получения курса", show_alert: true });
+  }
+}
+
+/**
+ * Форматирование улучшенного курса с трендом
+ */
+function formatEnhancedRate(data: EnhancedRateData): string {
+  const { rate, scale, currency, change, changePercent, trend, date } = data;
+  
+  // Эмодзи для тренда
+  const trendEmoji = trend === 'up' ? '📈' : trend === 'down' ? '📉' : '➡️';
+  
+  // Цветовое кодирование (используем эмодзи для имитации)
+  const changeEmoji = trend === 'up' ? '🟢' : trend === 'down' ? '🔴' : '⚪';
+  
+  // Форматирование изменения
+  let changeText = '';
+  if (change !== undefined && changePercent !== undefined) {
+    const changeSign = change > 0 ? '+' : '';
+    changeText = `\n${changeEmoji} <b>${changeSign}${change.toFixed(4)}</b> (${changeSign}${changePercent.toFixed(2)}%)`;
+  }
+  
+  // Форматирование даты
+  const formattedDate = new Date(date).toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  
+  return `💱 <b>${currency} к BYN</b>
+
+💰 <b>${scale} ${currency} = ${rate.toFixed(4)} BYN</b>
+${trendEmoji} <b>Тренд:</b> ${getTrendText(trend)}
+${changeText}
+
+📅 <b>Дата:</b> ${formattedDate}
+🏛️ <b>Источник:</b> НБРБ`;
+}
+
+/**
+ * Получить текстовое описание тренда
+ */
+function getTrendText(trend: 'up' | 'down' | 'stable'): string {
+  switch (trend) {
+    case 'up': return 'Рост';
+    case 'down': return 'Падение';
+    case 'stable': return 'Стабильно';
+    default: return 'Неизвестно';
   }
 }
