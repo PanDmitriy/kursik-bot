@@ -14,21 +14,30 @@ export async function handleSubscribe(ctx: Context) {
   // Добавляем уровень в хлебные крошки
   NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.SUBSCRIBE);
 
-  const keyboard = new InlineKeyboard();
+  // Создаем объединенную клавиатуру
+  const combinedKeyboard = new InlineKeyboard();
 
+  // Добавляем кнопки валют
   for (const code of AVAILABLE_CURRENCIES) {
-    keyboard.text(code, `sub_currency_${code}`);
+    combinedKeyboard.text(code, `sub_currency_${code}`);
   }
 
-  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  // Добавляем навигационные кнопки
+  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
+  if (breadcrumbs.length > 1) {
+    combinedKeyboard.row();
+    combinedKeyboard.text("🔙 Назад", "nav_back");
+  }
+  combinedKeyboard.text("🏠 Главное меню", "menu_main");
+
+  const breadcrumbsText = NavigationManager.formatBreadcrumbs(chatId);
 
   await ctx.reply(
-    `${breadcrumbs}🔔 <b>Подписка на уведомления</b>
+    `${breadcrumbsText}🔔 <b>Подписка на уведомления</b>
 
 Выбери валюту для подписки:`,
     { 
-      reply_markup: navKeyboard,
+      reply_markup: combinedKeyboard,
       parse_mode: "HTML"
     }
   );

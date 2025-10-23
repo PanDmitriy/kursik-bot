@@ -224,16 +224,7 @@ bot.callbackQuery(/^help_/, async (ctx) => {
   await ctx.answerCallbackQuery();
 });
 
-// Обработка callback-запросов для подписок
-bot.callbackQuery("menu_subscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleSubscribe(ctx);
-});
-
-bot.callbackQuery("menu_unsubscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleUnsubscribe(ctx);
-});
+// Обработка callback-запросов для подписок теперь в handleMenuCallback
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);

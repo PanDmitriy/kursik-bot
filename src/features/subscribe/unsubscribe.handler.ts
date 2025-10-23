@@ -35,14 +35,34 @@ export async function handleUnsubscribe(ctx: Context) {
     );
   }
 
+  // Добавляем навигационные кнопки
   const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
+  
+  // Объединяем клавиатуры
+  const combinedKeyboard = new InlineKeyboard();
+  
+  // Добавляем кнопки подписок
+  for (const { currency, hour, minute } of subs) {
+    combinedKeyboard.text(
+      `${currency} — ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
+      `unsub_${currency}`
+    );
+  }
+  
+  // Добавляем навигационные кнопки
+  const navButtons = NavigationManager.getBreadcrumbs(chatId);
+  if (navButtons.length > 1) {
+    combinedKeyboard.row();
+    combinedKeyboard.text("🔙 Назад", "nav_back");
+  }
+  combinedKeyboard.text("🏠 Главное меню", "menu_main");
 
   await ctx.reply(
     `${breadcrumbs}❌ <b>Отписка от уведомлений</b>
 
 Выбери подписку для удаления:`,
     { 
-      reply_markup: navKeyboard,
+      reply_markup: combinedKeyboard,
       parse_mode: "HTML"
     }
   );

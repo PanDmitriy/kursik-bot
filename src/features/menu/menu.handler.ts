@@ -74,6 +74,14 @@ export async function handleMenuCallback(ctx: Context, next: () => Promise<void>
       await handleHelpMenu(ctx);
       break;
       
+    case "menu_subscribe":
+      await handleSubscribe(ctx);
+      break;
+      
+    case "menu_unsubscribe":
+      await handleUnsubscribe(ctx);
+      break;
+      
     default:
       await ctx.reply("❓ Неизвестная команда");
   }
