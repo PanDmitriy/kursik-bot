@@ -1,16 +1,9 @@
 import { Bot, Context, InlineKeyboard } from "grammy";
 import { config } from "dotenv";
 import { handleRate, handleRateCallback, getAllRates, formatAllRates } from "../../features/rates/rate.handler";
-import {
-  handleSubscribe,
-  handleSubscribeCurrency,
-  handleSubscribeTime,
-} from "../../features/subscribe/subscribe.handler";
-import {
-  handleUnsubscribe,
-  handleUnsubscribeCallback
-} from "../../features/subscribe/unsubscribe.handler";
-import { handleListSubscriptions } from "../../features/subscribe/list.handler";
+import { handleSubscribe, handleSubscribeCurrency, handleSubscribeTime } from "../../features/subscription/lib";
+import { handleUnsubscribe, handleUnsubscribeCallback } from "../../features/subscription/lib";
+import { handleListSubscriptions } from "../../pages/subscriptions/ui";
 import { startNotifier } from "../../features/notifier/notifier";
 import {
   handleSetTimezone,
@@ -111,17 +104,26 @@ bot.callbackQuery("rate_all", async (ctx) => {
   );
 });
 
-bot.on("callback_query:data", handleRateCallback);
-
 // Обработка нажатий на кнопки подписки
 bot.command("subscribe", handleSubscribe);
-bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
+bot.callbackQuery(/sub_currency_/, async (ctx) => {
+  console.log("Bot callbackQuery sub_currency_ handler called");
+  await handleSubscribeCurrency(ctx, async () => {});
+});
 // Обработка текстового ввода времени HH:mm
-bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
+bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, async (ctx) => {
+  console.log("Bot hears time pattern handler called");
+  await handleSubscribeTime(ctx, async () => {});
+});
 
 // Обработка нажатий на кнопки отписки
 bot.command("unsubscribe", handleUnsubscribe);
-bot.callbackQuery(/unsub_/, handleUnsubscribeCallback);
+bot.callbackQuery(/unsub_/, async (ctx) => {
+  await handleUnsubscribeCallback(ctx, async () => {});
+});
+
+// Общий обработчик для курсов валют (должен быть ПОСЛЕ специфических)
+bot.on("callback_query:data", handleRateCallback);
 
 // Команда /subscriptions
 bot.command("subscriptions", handleListSubscriptions);
@@ -224,16 +226,8 @@ bot.callbackQuery(/^help_/, async (ctx) => {
   await ctx.answerCallbackQuery();
 });
 
-// Обработка callback-запросов для подписок
-bot.callbackQuery("menu_subscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleSubscribe(ctx);
-});
-
-bot.callbackQuery("menu_unsubscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleUnsubscribe(ctx);
-});
+// Обработка callback-запросов для подписок из меню
+// Эти обработчики теперь в handleMenuCallback
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);

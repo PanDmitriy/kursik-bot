@@ -1,8 +1,8 @@
 import { Context, InlineKeyboard } from "grammy";
 import { handleRate } from "../rates/rate.handler";
-import { handleSubscribe } from "../subscribe/subscribe.handler";
-import { handleListSubscriptions } from "../subscribe/list.handler";
-import { handleUnsubscribe } from "../subscribe/unsubscribe.handler";
+import { handleSubscribe } from "../subscription/lib";
+import { handleListSubscriptions } from "../../pages/subscriptions/ui";
+import { handleUnsubscribe } from "../subscription/lib";
 import { handleSetTimezone } from "../timezone/timezone.handler";
 import { getUserSubscriptions, getUserTimezone } from "../../entities/user/user.repo";
 import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
@@ -72,6 +72,14 @@ export async function handleMenuCallback(ctx: Context, next: () => Promise<void>
       
     case "menu_help":
       await handleHelpMenu(ctx);
+      break;
+      
+    case "menu_subscribe":
+      await handleSubscribe(ctx);
+      break;
+      
+    case "menu_unsubscribe":
+      await handleUnsubscribe(ctx);
       break;
       
     default:

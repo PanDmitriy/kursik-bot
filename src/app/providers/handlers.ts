@@ -3,6 +3,13 @@ import { handleMainMenu, handleMenuCallback } from "../../pages/main-menu/ui";
 import { handleRate, handleRateCallback, handleAllRates } from "../../pages/rates/ui";
 import { handleListSubscriptions } from "../../pages/subscriptions/ui";
 import { handleSettingsMenu, handleStatsMenu, handleHelpMenu, handleHelpCommands, handleHelpFaq } from "../../pages/settings/ui";
+import { 
+  handleSubscribe, 
+  handleSubscribeCurrency, 
+  handleSubscribeTime,
+  handleUnsubscribe,
+  handleUnsubscribeCallback 
+} from "../../features/subscription/lib";
 import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/lib/navigation";
 
 export function setupBotHandlers(): void {
@@ -34,6 +41,12 @@ export function setupBotHandlers(): void {
   // Команда /subscriptions
   telegramBot.command("subscriptions", handleListSubscriptions);
 
+  // Команда /subscribe
+  telegramBot.command("subscribe", handleSubscribe);
+
+  // Команда /unsubscribe
+  telegramBot.command("unsubscribe", handleUnsubscribe);
+
   // Обработка "Все валюты"
   telegramBot.callbackQuery("rate_all", handleAllRates);
 
@@ -42,6 +55,12 @@ export function setupBotHandlers(): void {
 
   // Обработка callback-запросов главного меню
   telegramBot.on("callback_query:data", handleMenuCallback);
+
+  // Обработка callback-запросов подписок
+  // Эти обработчики уже есть в bot.ts, поэтому убираем дублирование
+
+  // Обработка текстового ввода времени HH:mm
+  telegramBot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
 
   // Обработка callback-запросов настроек
   telegramBot.callbackQuery(/^settings_/, async (ctx) => {
@@ -64,6 +83,9 @@ export function setupBotHandlers(): void {
     }
     await ctx.answerCallbackQuery();
   });
+
+  // Обработка callback-запросов для подписок из главного меню
+  // Эти обработчики уже есть в bot.ts, поэтому убираем дублирование
 
   // Обработка кнопки "Назад"
   telegramBot.callbackQuery("nav_back", async (ctx) => {
@@ -97,6 +119,12 @@ export function setupBotHandlers(): void {
           break;
         case NAVIGATION_LEVELS.SUBSCRIPTIONS:
           await handleListSubscriptions(ctx);
+          break;
+        case NAVIGATION_LEVELS.SUBSCRIBE:
+          await handleSubscribe(ctx);
+          break;
+        case NAVIGATION_LEVELS.UNSUBSCRIBE:
+          await handleUnsubscribe(ctx);
           break;
         case NAVIGATION_LEVELS.SETTINGS:
           await handleSettingsMenu(ctx);
