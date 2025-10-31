@@ -83,9 +83,7 @@ export function startNotifier(bot: Bot) {
           const enhanced = await getEnhancedExchangeRate(currency);
           const subscribers = getChangeSubscribersByCurrency(currency);
 
-          // Обновляем last_rate сразу, чтобы не задвоить
-          setLastRate(currency, current.rate, current.scale);
-
+          // Отправляем уведомления всем подписчикам
           for (const chatId of subscribers) {
             try {
               await sendChangeNotification(bot, chatId, enhanced ?? {
@@ -98,6 +96,10 @@ export function startNotifier(bot: Bot) {
               console.error(`[NOTIFIER] Не удалось отправить change-уведомление ${chatId} ${currency}:`, e);
             }
           }
+
+          // Обновляем last_rate после отправки всех уведомлений
+          // Это гарантирует, что изменение курса будет отмечено как обработанное только после попыток отправки
+          setLastRate(currency, current.rate, current.scale);
         } catch (e) {
           console.error(`[NOTIFIER] Ошибка при обработке изменений для ${currency}:`, e);
         }

@@ -78,7 +78,11 @@ bot.callbackQuery("rate_all", async (ctx) => {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
+  try {
+    await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
   
   const rates = await getAllRates();
   
@@ -145,12 +149,20 @@ bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
 
 // Обработка callback-запросов для подписок (должны быть перед общим обработчиком menu_)
 bot.callbackQuery("menu_subscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
   await handleSubscribe(ctx);
 });
 
 bot.callbackQuery("menu_unsubscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
   await handleUnsubscribe(ctx);
 });
 
@@ -164,7 +176,11 @@ bot.callbackQuery(/^settings_/, async (ctx) => {
   } else if (data === "settings_notifications") {
     await ctx.reply("🔔 Настройки уведомлений пока в разработке");
   }
-  await ctx.answerCallbackQuery();
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
 });
 bot.callbackQuery(/^help_/, async (ctx) => {
   const data = ctx.callbackQuery?.data;
@@ -173,9 +189,42 @@ bot.callbackQuery(/^help_/, async (ctx) => {
   } else if (data === "help_faq") {
     await handleHelpFaq(ctx);
   }
-  await ctx.answerCallbackQuery();
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
 });
 
+
+// Глобальный обработчик ошибок
+bot.catch = (err: any) => {
+  const ctx = err.ctx as Context;
+  const error = err.error as any;
+  
+  // Игнорируем ошибки устаревших callback queries
+  if (error?.error_code === 400 && error?.description?.includes("too old")) {
+    console.log(`[BOT] Ignoring expired callback query: ${ctx.callbackQuery?.data || "unknown"}`);
+    return;
+  }
+  
+  console.error(`[BOT] Error in middleware:`, error);
+  console.error(`[BOT] Update:`, ctx.update);
+  
+  // Пытаемся ответить пользователю об ошибке
+  if (ctx.callbackQuery) {
+    ctx.answerCallbackQuery({
+      text: "⚠️ Произошла ошибка. Попробуйте еще раз.",
+      show_alert: false
+    }).catch(() => {
+      // Игнорируем ошибки при ответе на callback
+    });
+  } else if (ctx.message) {
+    ctx.reply("⚠️ Произошла ошибка. Попробуйте еще раз.").catch(() => {
+      // Игнорируем ошибки при отправке сообщения
+    });
+  }
+};
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);

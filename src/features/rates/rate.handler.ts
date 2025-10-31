@@ -91,7 +91,12 @@ export async function handleRateCallback(ctx: Context, next: () => Promise<void>
   const result = await getEnhancedExchangeRate(currency);
 
   if (result) {
-    await ctx.answerCallbackQuery(); // убирает "загрузка..."
+    // Игнорируем ошибки устаревших callback queries
+    try {
+      await ctx.answerCallbackQuery(); // убирает "загрузка..."
+    } catch {
+      // Callback query может быть устаревшим
+    }
     
     // Создаем красивую клавиатуру
     const keyboard = new InlineKeyboard()
@@ -110,7 +115,11 @@ export async function handleRateCallback(ctx: Context, next: () => Promise<void>
       }
     );
   } else {
-    await ctx.answerCallbackQuery({ text: "Ошибка получения курса", show_alert: true });
+    try {
+      await ctx.answerCallbackQuery({ text: "Ошибка получения курса", show_alert: true });
+    } catch {
+      // Игнорируем ошибки устаревших callback queries
+    }
   }
 }
 

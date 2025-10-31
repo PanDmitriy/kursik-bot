@@ -40,7 +40,18 @@ export async function handleMenuCallback(ctx: Context, next: () => Promise<void>
   const data = ctx.callbackQuery?.data;
   if (!data?.startsWith("menu_")) return next();
 
-  await ctx.answerCallbackQuery();
+  // Игнорируем ошибки для устаревших callback queries
+  try {
+    await ctx.answerCallbackQuery();
+  } catch (error: any) {
+    // Если callback query устарел, просто игнорируем ошибку и продолжаем обработку
+    if (error?.error_code === 400 && error?.description?.includes("too old")) {
+      // Игнорируем устаревшие запросы
+    } else {
+      // Для других ошибок пробрасываем исключение дальше (глобальный обработчик их обработает)
+      throw error;
+    }
+  }
 
   switch (data) {
     case "menu_main":
