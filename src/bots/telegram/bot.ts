@@ -5,6 +5,7 @@ import {
   handleSubscribe,
   handleSubscribeCurrency,
   handleSubscribeTime,
+  handleSubscribeType,
 } from "../../features/subscribe/subscribe.handler";
 import {
   handleUnsubscribe,
@@ -118,6 +119,7 @@ bot.on("callback_query:data", handleRateCallback);
 // Обработка нажатий на кнопки подписки (ежедневной)
 bot.command("subscribe", handleSubscribe);
 bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
+bot.callbackQuery(/sub_type_/, handleSubscribeType);
 // Обработка текстового ввода времени HH:mm
 bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
 
@@ -243,6 +245,17 @@ bot.callbackQuery("menu_subscribe", async (ctx) => {
 bot.callbackQuery("menu_unsubscribe", async (ctx) => {
   await ctx.answerCallbackQuery();
   await handleUnsubscribe(ctx);
+});
+
+// Кнопки меню для подписки по изменению
+bot.callbackQuery("menu_subscribe_change", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await handleSubscribeChange(ctx);
+});
+
+bot.callbackQuery("menu_unsubscribe_change", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await handleUnsubscribeChange(ctx);
 });
 
 // Запускаем планировщик уведомлений

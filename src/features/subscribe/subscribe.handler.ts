@@ -1,6 +1,8 @@
 import { Context, InlineKeyboard } from "grammy";
 import { AVAILABLE_CURRENCIES } from "../rates/rate.handler";
 import { addSubscription, getUserTimezone } from "../../entities/user/user.repo";
+import { addChangeSubscription } from "../../entities/user/change.repo";
+import { isPremium } from "../../shared/services/premium.service";
 import { TimezoneService } from "../../shared/services/timezone.service";
 import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
@@ -40,12 +42,15 @@ export async function handleSubscribeCurrency(ctx: Context, next: () => Promise<
 
   const currency = data.replace("sub_currency_", "");
   await ctx.answerCallbackQuery();
+  const keyboard = new InlineKeyboard()
+    .text("⏰ Ежедневно", `sub_type_daily_${currency}`)
+    .row()
+    .text("🔔 При изменении", `sub_type_change_${currency}`);
+
   await ctx.reply(
-    `Введи время для ${currency} в формате HH:mm (например, 09:00 или 18:45).`,
+    `Выбери тип подписки для <b>${currency}</b>:`,
+    { reply_markup: keyboard, parse_mode: "HTML" }
   );
-  if (ctx.chat?.id) {
-    pendingTimeByChatId.set(ctx.chat.id, currency);
-  }
 }
 
 export async function handleSubscribeTime(ctx: Context, next: () => Promise<void>) {
@@ -82,4 +87,34 @@ export async function handleSubscribeTime(ctx: Context, next: () => Promise<void
     { parse_mode: "HTML" }
   );
   pendingTimeByChatId.delete(chatId);
+}
+
+export async function handleSubscribeType(ctx: Context, next: () => Promise<void>) {
+  const data = ctx.callbackQuery?.data;
+  if (!data?.startsWith("sub_type_")) return next();
+
+  const chatId = ctx.chat?.id;
+  if (!chatId) return next();
+
+  await ctx.answerCallbackQuery();
+
+  if (data.startsWith("sub_type_daily_")) {
+    const currency = data.replace("sub_type_daily_", "");
+    pendingTimeByChatId.set(chatId, currency);
+    await ctx.reply(
+      `Введи время для ${currency} в формате HH:mm (например, 09:00 или 18:45).`
+    );
+    return;
+  }
+
+  if (data.startsWith("sub_type_change_")) {
+    const currency = data.replace("sub_type_change_", "");
+    if (!isPremium(chatId)) {
+      await ctx.reply("🔒 Подписка по изменению курса доступна в премиум-версии.");
+      return;
+    }
+    addChangeSubscription(chatId, currency);
+    await ctx.reply(`✅ Подписка по изменению курса для <b>${currency}</b> оформлена.`, { parse_mode: "HTML" });
+    return;
+  }
 }
