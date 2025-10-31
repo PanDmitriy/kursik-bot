@@ -5,7 +5,7 @@ import {
   handleSubscribe,
   handleSubscribeCurrency,
   handleSubscribeTime,
-  handleSubscribeType,
+  handleSubscribeTypeSelect,
 } from "../../features/subscribe/subscribe.handler";
 import {
   handleUnsubscribe,
@@ -100,8 +100,9 @@ bot.on("callback_query:data", handleRateCallback);
 
 // Обработка нажатий на кнопки подписки (ежедневной)
 bot.command("subscribe", handleSubscribe);
+bot.callbackQuery("sub_type_daily", handleSubscribeTypeSelect);
+bot.callbackQuery("sub_type_change", handleSubscribeTypeSelect);
 bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
-bot.callbackQuery(/sub_type_/, handleSubscribeType);
 // Обработка текстового ввода времени HH:mm
 bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
 
@@ -140,9 +141,19 @@ bot.callbackQuery(/^tz_[A-Za-z]+\/[A-Za-z_]+$/, async (ctx) => {
 // Обработка текстового ввода для поиска часовых поясов
 bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
 
+// Обработка callback-запросов для подписок (должны быть перед общим обработчиком menu_)
+bot.callbackQuery("menu_subscribe", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await handleSubscribe(ctx);
+});
+
+bot.callbackQuery("menu_unsubscribe", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await handleUnsubscribe(ctx);
+});
+
 // Обработка callback-запросов главного меню
 bot.callbackQuery(/^menu_/, handleMenuCallback);
-
 
 bot.callbackQuery(/^settings_/, async (ctx) => {
   const data = ctx.callbackQuery?.data;
@@ -161,17 +172,6 @@ bot.callbackQuery(/^help_/, async (ctx) => {
     await handleHelpFaq(ctx);
   }
   await ctx.answerCallbackQuery();
-});
-
-// Обработка callback-запросов для подписок
-bot.callbackQuery("menu_subscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleSubscribe(ctx);
-});
-
-bot.callbackQuery("menu_unsubscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleUnsubscribe(ctx);
 });
 
 
