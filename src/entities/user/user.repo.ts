@@ -23,35 +23,14 @@ export function getUserSubscriptions(chatId: number): Subscription[] {
 export function removeSubscription(chatId: number, currency: string, hour?: number, minute?: number): boolean {
   let result;
   
-  // Для отладки: проверяем существующие записи перед удалением
-  const checkStmt = db.prepare(`
-    SELECT chat_id, currency, hour, minute FROM subscriptions WHERE chat_id = ? AND currency = ?
-  `);
-  const existing = checkStmt.all(chatId, currency) as Array<{chat_id: number, currency: string, hour: number, minute: number}>;
-  console.log(`[REMOVE_SUBSCRIPTION] Найдено подписок для удаления: chatId=${chatId}, currency=${currency}, existing=`, JSON.stringify(existing));
-  
   if (hour !== undefined && minute !== undefined) {
     // Удаляем подписку с конкретным временем
-    // Убеждаемся, что hour и minute - числа
     const hourNum = Number(hour);
     const minuteNum = Number(minute);
-    console.log(`[REMOVE_SUBSCRIPTION] Пытаемся удалить: chatId=${chatId}, currency=${currency}, hour=${hourNum} (type: ${typeof hourNum}), minute=${minuteNum} (type: ${typeof minuteNum})`);
     const stmt = db.prepare(`
       DELETE FROM subscriptions WHERE chat_id = ? AND currency = ? AND hour = ? AND minute = ?
     `);
     result = stmt.run(chatId, currency, hourNum, minuteNum);
-    console.log(`[REMOVE_SUBSCRIPTION] Результат удаления: changes=${result.changes}`);
-    
-    // Если не удалось удалить по времени, попробуем удалить просто по валюте (fallback)
-    if (result.changes === 0) {
-      console.log(`[REMOVE_SUBSCRIPTION] Попытка удалить по валюте как fallback...`);
-      const fallbackStmt = db.prepare(`
-        DELETE FROM subscriptions WHERE chat_id = ? AND currency = ?
-      `);
-      const fallbackResult = fallbackStmt.run(chatId, currency);
-      console.log(`[REMOVE_SUBSCRIPTION] Fallback результат: changes=${fallbackResult.changes}`);
-      return (fallbackResult.changes ?? 0) > 0;
-    }
   } else {
     // Удаляем все подписки на эту валюту (обратная совместимость)
     const stmt = db.prepare(`
