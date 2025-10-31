@@ -20,10 +20,27 @@ export function getUserSubscriptions(chatId: number): Subscription[] {
     return db.prepare(`SELECT currency, hour, minute, timezone FROM subscriptions WHERE chat_id = ?`).all(chatId) as Subscription[];
 }
 
-export function removeSubscription(chatId: number, currency: string): void {
-  db.prepare(`
-    DELETE FROM subscriptions WHERE chat_id = ? AND currency = ?
-  `).run(chatId, currency);
+export function removeSubscription(chatId: number, currency: string, hour?: number, minute?: number): boolean {
+  let result;
+  
+  if (hour !== undefined && minute !== undefined) {
+    // Удаляем подписку с конкретным временем
+    const hourNum = Number(hour);
+    const minuteNum = Number(minute);
+    const stmt = db.prepare(`
+      DELETE FROM subscriptions WHERE chat_id = ? AND currency = ? AND hour = ? AND minute = ?
+    `);
+    result = stmt.run(chatId, currency, hourNum, minuteNum);
+  } else {
+    // Удаляем все подписки на эту валюту (обратная совместимость)
+    const stmt = db.prepare(`
+      DELETE FROM subscriptions WHERE chat_id = ? AND currency = ?
+    `);
+    result = stmt.run(chatId, currency);
+  }
+  
+  // Возвращаем true, если была удалена хотя бы одна строка
+  return (result.changes ?? 0) > 0;
 }
 
 export function getAllChatIds(): number[] {

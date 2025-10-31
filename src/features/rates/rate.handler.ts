@@ -1,6 +1,5 @@
 import { Context, InlineKeyboard } from "grammy";
 import { getExchangeRate, getEnhancedExchangeRate, EnhancedRateData } from "../../shared/api/exchange";
-import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 export const AVAILABLE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "PLN"];
 
@@ -58,15 +57,6 @@ export async function handleRate(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Проверяем, не находимся ли мы уже в меню курсов
-  const currentBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
-  const isAlreadyInRates = currentBreadcrumbs.includes(NAVIGATION_LEVELS.RATES);
-  
-  // Добавляем уровень в хлебные крошки только если мы еще не в меню курсов
-  if (!isAlreadyInRates) {
-    NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.RATES);
-  }
-
   // Создаем клавиатуру с красивым расположением кнопок
   const keyboard = new InlineKeyboard();
 
@@ -77,18 +67,10 @@ export async function handleRate(ctx: Context) {
   
   // Переходим на новую строку для "Все валюты"
   keyboard.row().text("📊 Все валюты", "rate_all");
-  
-  // Добавляем навигационные кнопки на отдельной строке
-  const navBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
-  if (navBreadcrumbs.length > 1) {
-    keyboard.row().text("🔙 Назад", "nav_back");
-  }
-  keyboard.text("🏠 Главное меню", "menu_main");
-
-  const formattedBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  keyboard.row().text("🏠 Главное меню", "menu_main");
 
   await ctx.reply(
-    `${formattedBreadcrumbs}💰 <b>Курсы валют</b>
+    `💰 <b>Курсы валют</b>
 
 Выберите валюту:`,
     { 
@@ -109,12 +91,11 @@ export async function handleRateCallback(ctx: Context, next: () => Promise<void>
   const result = await getEnhancedExchangeRate(currency);
 
   if (result) {
-    await ctx.answerCallbackQuery(); // убирает "загрузка..."
-    
-    const chatId = ctx.chat?.id;
-    if (chatId) {
-      // Добавляем уровень в хлебные крошки
-      NavigationManager.addBreadcrumb(chatId, `${NAVIGATION_LEVELS.RATE_DETAIL} ${currency}`);
+    // Игнорируем ошибки устаревших callback queries
+    try {
+      await ctx.answerCallbackQuery(); // убирает "загрузка..."
+    } catch {
+      // Callback query может быть устаревшим
     }
     
     // Создаем красивую клавиатуру
@@ -122,27 +103,23 @@ export async function handleRateCallback(ctx: Context, next: () => Promise<void>
       .text("🔄 Обновить", `rate_${currency}`)
       .text("📊 Все валюты", "rate_all")
       .row()
-      .text("🔔 Подписаться", `sub_currency_${currency}`)
-      .row();
-    
-    // Добавляем навигационные кнопки
-    const breadcrumbs = NavigationManager.getBreadcrumbs(chatId!);
-    if (breadcrumbs.length > 1) {
-      keyboard.text("🔙 Назад", "nav_back");
-    }
-    keyboard.text("🏠 Главное меню", "menu_main");
-    
-    const currentBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId!);
+      .text("🔔 Подписаться", `sub_type_select_${currency}`)
+      .row()
+      .text("🏠 Главное меню", "menu_main");
     
     await ctx.reply(
-      `${currentBreadcrumbs}${formatEnhancedRate(result)}`,
+      formatEnhancedRate(result),
       {
         reply_markup: keyboard,
         parse_mode: "HTML"
       }
     );
   } else {
-    await ctx.answerCallbackQuery({ text: "Ошибка получения курса", show_alert: true });
+    try {
+      await ctx.answerCallbackQuery({ text: "Ошибка получения курса", show_alert: true });
+    } catch {
+      // Игнорируем ошибки устаревших callback queries
+    }
   }
 }
 

@@ -5,13 +5,17 @@ import {
   handleSubscribe,
   handleSubscribeCurrency,
   handleSubscribeTime,
+  handleSubscribeTypeSelect,
+  handleSubscribeTypeSelectFromRate,
 } from "../../features/subscribe/subscribe.handler";
 import {
   handleUnsubscribe,
-  handleUnsubscribeCallback
+  handleUnsubscribeCallback,
+  handleUnsubscribeType
 } from "../../features/subscribe/unsubscribe.handler";
 import { handleListSubscriptions } from "../../features/subscribe/list.handler";
 import { startNotifier } from "../../features/notifier/notifier";
+import { handleUnsubscribeChangeCallback } from "../../features/subscribe_change/unsubscribe_change.handler";
 import {
   handleSetTimezone,
   handleLocation,
@@ -32,7 +36,6 @@ import {
   handleHelpCommands,
   handleHelpFaq,
 } from "../../features/menu/menu.handler";
-import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 
 // Загружаем переменные из .env
@@ -75,15 +78,10 @@ bot.callbackQuery("rate_all", async (ctx) => {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
-  
-  // Проверяем, не находимся ли мы уже в разделе "Все валюты"
-  const currentBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
-  const isAlreadyInAllCurrencies = currentBreadcrumbs.includes(NAVIGATION_LEVELS.ALL_CURRENCIES);
-  
-  // Добавляем уровень в хлебные крошки только если мы еще не в разделе "Все валюты"
-  if (!isAlreadyInAllCurrencies) {
-    NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.ALL_CURRENCIES);
+  try {
+    await ctx.answerCallbackQuery("🔄 Загружаем курсы всех валют...");
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
   }
   
   const rates = await getAllRates();
@@ -91,19 +89,11 @@ bot.callbackQuery("rate_all", async (ctx) => {
   // Создаем красивую клавиатуру
   const keyboard = new InlineKeyboard()
     .text("🔄 Обновить", "rate_all")
-    .row();
-  
-  // Добавляем навигационные кнопки
-  const navBreadcrumbs = NavigationManager.getBreadcrumbs(chatId);
-  if (navBreadcrumbs.length > 1) {
-    keyboard.text("🔙 Назад", "nav_back");
-  }
-  keyboard.text("🏠 Главное меню", "menu_main");
-  
-  const formattedBreadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+    .row()
+    .text("🏠 Главное меню", "menu_main");
   
   await ctx.reply(
-    `${formattedBreadcrumbs}${formatAllRates(rates)}`,
+    formatAllRates(rates),
     {
       reply_markup: keyboard,
       parse_mode: "HTML"
@@ -113,15 +103,22 @@ bot.callbackQuery("rate_all", async (ctx) => {
 
 bot.on("callback_query:data", handleRateCallback);
 
-// Обработка нажатий на кнопки подписки
+// Обработка нажатий на кнопки подписки (ежедневной)
 bot.command("subscribe", handleSubscribe);
+bot.callbackQuery("sub_type_daily", handleSubscribeTypeSelect);
+bot.callbackQuery("sub_type_change", handleSubscribeTypeSelect);
+bot.callbackQuery(/sub_type_select_/, handleSubscribeTypeSelectFromRate);
 bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
 // Обработка текстового ввода времени HH:mm
 bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
 
+// Колбэк удаления change-подписки (используется из сценария выбора типа удаления)
+bot.callbackQuery(/unsubchg_/, handleUnsubscribeChangeCallback);
+
 // Обработка нажатий на кнопки отписки
 bot.command("unsubscribe", handleUnsubscribe);
 bot.callbackQuery(/unsub_/, handleUnsubscribeCallback);
+bot.callbackQuery(/unsub_type_/, handleUnsubscribeType);
 
 // Команда /subscriptions
 bot.command("subscriptions", handleListSubscriptions);
@@ -150,60 +147,27 @@ bot.callbackQuery(/^tz_[A-Za-z]+\/[A-Za-z_]+$/, async (ctx) => {
 // Обработка текстового ввода для поиска часовых поясов
 bot.hears(/^[A-Za-zА-Яа-я\s]+$/, handleTimezoneText);
 
+// Обработка callback-запросов для подписок (должны быть перед общим обработчиком menu_)
+bot.callbackQuery("menu_subscribe", async (ctx) => {
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
+  await handleSubscribe(ctx);
+});
+
+bot.callbackQuery("menu_unsubscribe", async (ctx) => {
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
+  await handleUnsubscribe(ctx);
+});
+
 // Обработка callback-запросов главного меню
 bot.callbackQuery(/^menu_/, handleMenuCallback);
-
-// Обработка кнопки "Назад"
-bot.callbackQuery("nav_back", async (ctx) => {
-  const chatId = ctx.chat?.id;
-  if (!chatId) return;
-
-  await ctx.answerCallbackQuery();
-  
-  // Удаляем последний уровень из хлебных крошек
-  NavigationManager.removeLastBreadcrumb(chatId);
-  
-  // Получаем предыдущий уровень
-  const breadcrumbs = NavigationManager.getBreadcrumbs(chatId);
-  
-  if (breadcrumbs.length === 0) {
-    // Если нет хлебных крошек, возвращаемся в главное меню
-    await handleMainMenu(ctx);
-  } else {
-    // Определяем, куда вернуться на основе последнего уровня
-    const lastLevel = breadcrumbs[breadcrumbs.length - 1];
-    
-    switch (lastLevel) {
-      case NAVIGATION_LEVELS.MAIN:
-        await handleMainMenu(ctx);
-        break;
-      case NAVIGATION_LEVELS.RATES:
-        await handleRate(ctx);
-        break;
-      case NAVIGATION_LEVELS.ALL_CURRENCIES:
-        await handleRate(ctx);
-        break;
-      case NAVIGATION_LEVELS.SUBSCRIPTIONS:
-        await handleListSubscriptions(ctx);
-        break;
-      case NAVIGATION_LEVELS.SETTINGS:
-        await handleSettingsMenu(ctx);
-        break;
-      case NAVIGATION_LEVELS.STATS:
-        await handleStatsMenu(ctx);
-        break;
-      case NAVIGATION_LEVELS.HELP:
-        await handleHelpMenu(ctx);
-        break;
-      case "Команды":
-      case "FAQ":
-        await handleHelpMenu(ctx);
-        break;
-      default:
-        await handleMainMenu(ctx);
-    }
-  }
-});
 
 bot.callbackQuery(/^settings_/, async (ctx) => {
   const data = ctx.callbackQuery?.data;
@@ -212,7 +176,11 @@ bot.callbackQuery(/^settings_/, async (ctx) => {
   } else if (data === "settings_notifications") {
     await ctx.reply("🔔 Настройки уведомлений пока в разработке");
   }
-  await ctx.answerCallbackQuery();
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
 });
 bot.callbackQuery(/^help_/, async (ctx) => {
   const data = ctx.callbackQuery?.data;
@@ -221,19 +189,42 @@ bot.callbackQuery(/^help_/, async (ctx) => {
   } else if (data === "help_faq") {
     await handleHelpFaq(ctx);
   }
-  await ctx.answerCallbackQuery();
+  try {
+    await ctx.answerCallbackQuery();
+  } catch {
+    // Игнорируем ошибки устаревших callback queries
+  }
 });
 
-// Обработка callback-запросов для подписок
-bot.callbackQuery("menu_subscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleSubscribe(ctx);
-});
 
-bot.callbackQuery("menu_unsubscribe", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleUnsubscribe(ctx);
-});
+// Глобальный обработчик ошибок
+bot.catch = (err: any) => {
+  const ctx = err.ctx as Context;
+  const error = err.error as any;
+  
+  // Игнорируем ошибки устаревших callback queries
+  if (error?.error_code === 400 && error?.description?.includes("too old")) {
+    console.log(`[BOT] Ignoring expired callback query: ${ctx.callbackQuery?.data || "unknown"}`);
+    return;
+  }
+  
+  console.error(`[BOT] Error in middleware:`, error);
+  console.error(`[BOT] Update:`, ctx.update);
+  
+  // Пытаемся ответить пользователю об ошибке
+  if (ctx.callbackQuery) {
+    ctx.answerCallbackQuery({
+      text: "⚠️ Произошла ошибка. Попробуйте еще раз.",
+      show_alert: false
+    }).catch(() => {
+      // Игнорируем ошибки при ответе на callback
+    });
+  } else if (ctx.message) {
+    ctx.reply("⚠️ Произошла ошибка. Попробуйте еще раз.").catch(() => {
+      // Игнорируем ошибки при отправке сообщения
+    });
+  }
+};
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);
