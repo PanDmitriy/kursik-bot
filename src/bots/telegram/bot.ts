@@ -6,6 +6,7 @@ import {
   handleSubscribeCurrency,
   handleSubscribeTime,
   handleSubscribeTypeSelect,
+  handleSubscribeTypeSelectFromRate,
 } from "../../features/subscribe/subscribe.handler";
 import {
   handleUnsubscribe,
@@ -102,6 +103,7 @@ bot.on("callback_query:data", handleRateCallback);
 bot.command("subscribe", handleSubscribe);
 bot.callbackQuery("sub_type_daily", handleSubscribeTypeSelect);
 bot.callbackQuery("sub_type_change", handleSubscribeTypeSelect);
+bot.callbackQuery(/sub_type_select_/, handleSubscribeTypeSelectFromRate);
 bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
 // Обработка текстового ввода времени HH:mm
 bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);

@@ -98,7 +98,7 @@ export async function handleRateCallback(ctx: Context, next: () => Promise<void>
       .text("🔄 Обновить", `rate_${currency}`)
       .text("📊 Все валюты", "rate_all")
       .row()
-      .text("🔔 Подписаться", `sub_currency_${currency}`)
+      .text("🔔 Подписаться", `sub_type_select_${currency}`)
       .row()
       .text("🏠 Главное меню", "menu_main");
     

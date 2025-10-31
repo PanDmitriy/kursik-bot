@@ -61,6 +61,45 @@ export async function handleSubscribeTypeSelect(ctx: Context, next: () => Promis
   );
 }
 
+/**
+ * Обработка выбора типа подписки из деталей курса валюты
+ * Показывает меню выбора типа подписки для конкретной валюты
+ */
+export async function handleSubscribeTypeSelectFromRate(ctx: Context, next: () => Promise<void>) {
+  const data = ctx.callbackQuery?.data;
+  if (!data?.startsWith("sub_type_select_")) return next();
+
+  const chatId = ctx.chat?.id;
+  if (!chatId) return next();
+
+  await ctx.answerCallbackQuery();
+
+  const currency = data.replace("sub_type_select_", "");
+  
+  // Проверяем, что валюта существует
+  if (!AVAILABLE_CURRENCIES.includes(currency)) {
+    await ctx.reply(`❌ Валюта ${currency} не поддерживается.`);
+    return;
+  }
+
+  const keyboard = new InlineKeyboard()
+    .text("⏰ Ежедневно", `sub_currency_daily_${currency}`)
+    .row()
+    .text("🔔 При изменении", `sub_currency_change_${currency}`)
+    .row()
+    .text("🏠 Главное меню", "menu_main");
+
+  await ctx.reply(
+    `🔔 <b>Подписка на ${currency}</b>
+
+Выбери тип подписки:`,
+    { 
+      reply_markup: keyboard,
+      parse_mode: "HTML"
+    }
+  );
+}
+
 export async function handleSubscribeCurrency(ctx: Context, next: () => Promise<void>) {
   const data = ctx.callbackQuery?.data;
   if (!data?.startsWith("sub_currency_")) return next();
