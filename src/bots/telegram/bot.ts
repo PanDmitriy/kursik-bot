@@ -14,8 +14,7 @@ import {
 } from "../../features/subscribe/unsubscribe.handler";
 import { handleListSubscriptions } from "../../features/subscribe/list.handler";
 import { startNotifier } from "../../features/notifier/notifier";
-import { handleSubscribeChange, handleSubscribeChangeCurrency } from "../../features/subscribe_change/subscribe_change.handler";
-import { handleUnsubscribeChange, handleUnsubscribeChangeCallback } from "../../features/subscribe_change/unsubscribe_change.handler";
+import { handleUnsubscribeChangeCallback } from "../../features/subscribe_change/unsubscribe_change.handler";
 import {
   handleSetTimezone,
   handleLocation,
@@ -124,12 +123,7 @@ bot.callbackQuery(/sub_type_/, handleSubscribeType);
 // Обработка текстового ввода времени HH:mm
 bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
 
-// Подписка по изменению курса
-bot.command("subscribe_change", handleSubscribeChange);
-bot.callbackQuery(/subchg_/, handleSubscribeChangeCurrency);
-
-// Отписка от подписки по изменению курса
-bot.command("unsubscribe_change", handleUnsubscribeChange);
+// Колбэк удаления change-подписки (используется из сценария выбора типа удаления)
 bot.callbackQuery(/unsubchg_/, handleUnsubscribeChangeCallback);
 
 // Обработка нажатий на кнопки отписки
@@ -249,16 +243,6 @@ bot.callbackQuery("menu_unsubscribe", async (ctx) => {
   await handleUnsubscribe(ctx);
 });
 
-// Кнопки меню для подписки по изменению
-bot.callbackQuery("menu_subscribe_change", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleSubscribeChange(ctx);
-});
-
-bot.callbackQuery("menu_unsubscribe_change", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await handleUnsubscribeChange(ctx);
-});
 
 // Запускаем планировщик уведомлений
 startNotifier(bot);
