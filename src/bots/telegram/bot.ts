@@ -9,7 +9,8 @@ import {
 } from "../../features/subscribe/subscribe.handler";
 import {
   handleUnsubscribe,
-  handleUnsubscribeCallback
+  handleUnsubscribeCallback,
+  handleUnsubscribeType
 } from "../../features/subscribe/unsubscribe.handler";
 import { handleListSubscriptions } from "../../features/subscribe/list.handler";
 import { startNotifier } from "../../features/notifier/notifier";
@@ -134,6 +135,7 @@ bot.callbackQuery(/unsubchg_/, handleUnsubscribeChangeCallback);
 // Обработка нажатий на кнопки отписки
 bot.command("unsubscribe", handleUnsubscribe);
 bot.callbackQuery(/unsub_/, handleUnsubscribeCallback);
+bot.callbackQuery(/unsub_type_/, handleUnsubscribeType);
 
 // Команда /subscriptions
 bot.command("subscriptions", handleListSubscriptions);
