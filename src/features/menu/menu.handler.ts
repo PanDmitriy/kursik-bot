@@ -5,6 +5,7 @@ import { handleListSubscriptions } from "../subscribe/list.handler";
 import { handleUnsubscribe } from "../subscribe/unsubscribe.handler";
 import { handleSetTimezone } from "../timezone/timezone.handler";
 import { getUserSubscriptions, getUserTimezone } from "../../entities/user/user.repo";
+import { listChangeSubscriptions } from "../../entities/user/change.repo";
 
 /**
  * Главное меню бота с основными функциями
@@ -116,7 +117,13 @@ export async function handleStatsMenu(ctx: Context) {
 
   // Получаем статистику пользователя
   const subs = getUserSubscriptions(chatId);
-  const totalSubs = subs.length;
+  const changeSubs = listChangeSubscriptions(chatId);
+  const totalSubs = subs.length + changeSubs.length;
+  
+  // Объединяем валюты из обоих типов подписок
+  const dailyCurrencies = new Set(subs.map(s => s.currency));
+  const changeCurrencies = new Set(changeSubs);
+  const allCurrencies = new Set([...dailyCurrencies, ...changeCurrencies]);
   
   const keyboard = new InlineKeyboard()
     .text("🏠 Главное меню", "menu_main");
@@ -125,7 +132,7 @@ export async function handleStatsMenu(ctx: Context) {
     `📊 <b>Твоя статистика</b>
 
 🔔 Активных подписок: <b>${totalSubs}</b>
-💰 Отслеживаемых валют: <b>${new Set(subs.map(s => s.currency)).size}</b>
+💰 Отслеживаемых валют: <b>${allCurrencies.size}</b>
 🌍 Часовой пояс: <b>${getUserTimezone(chatId)}</b>
 
 <i>Статистика обновляется в реальном времени</i>`,
