@@ -3,6 +3,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import { DateTime } from "luxon";
 import { getAllChatIds, getUserSubscriptions, Subscription } from "../../entities/user/user.repo";
 import { getExchangeRate, getEnhancedExchangeRate } from "../../shared/api/exchange";
+import { getDistinctChangeCurrencies, getChangeSubscribersByCurrency, getLastRate, setLastRate } from "../../entities/user/change.repo";
 
 
 // Функция запуска планировщика
@@ -27,6 +28,47 @@ export function startNotifier(bot: Bot) {
             await sendInteractiveNotification(bot, chatId, result, now, timezone);
           }
         }
+    }
+  });
+
+  // Отслеживание изменений курса для подписчиков change_subscriptions
+  cron.schedule("* * * * *", async () => {
+    const currencies = getDistinctChangeCurrencies();
+    if (currencies.length === 0) return;
+
+    for (const currency of currencies) {
+      const current = await getExchangeRate(currency);
+      if (!current) continue;
+
+      const prev = getLastRate(currency);
+      // Если нет предыдущего значения — инициализируем без уведомлений
+      if (!prev) {
+        setLastRate(currency, current.rate, current.scale);
+        continue;
+      }
+
+      const hasChanged = current.rate !== prev.rate || current.scale !== prev.scale;
+      if (!hasChanged) continue;
+
+      // Получаем расширенные данные для красивого уведомления
+      const enhanced = await getEnhancedExchangeRate(currency);
+      const subscribers = getChangeSubscribersByCurrency(currency);
+
+      // Обновляем last_rate сразу, чтобы не задвоить
+      setLastRate(currency, current.rate, current.scale);
+
+      for (const chatId of subscribers) {
+        try {
+          await sendChangeNotification(bot, chatId, enhanced ?? {
+            currency,
+            rate: current.rate,
+            scale: current.scale,
+            date: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.error(`Не удалось отправить change-уведомление ${chatId} ${currency}:`, e);
+        }
+      }
     }
   });
 
@@ -78,6 +120,27 @@ ${changeText}
     reply_markup: keyboard,
     parse_mode: "HTML"
   });
+}
+
+/**
+ * Уведомление при изменении курса
+ */
+async function sendChangeNotification(
+  bot: Bot,
+  chatId: number,
+  rateData: any
+) {
+  const { currency, rate, scale, change, changePercent, trend } = rateData;
+
+  const trendEmoji = trend === 'up' ? '📈' : trend === 'down' ? '📉' : '↔️';
+  const changeSign = (typeof change === 'number' && change > 0) ? '+' : '';
+  const changeLine = (typeof change === 'number' && typeof changePercent === 'number')
+    ? `\n${trendEmoji} Изменение: <b>${changeSign}${change.toFixed(4)}</b> (${changeSign}${changePercent.toFixed(2)}%)`
+    : '';
+
+  const message = `🔔 <b>Курс ${currency} изменился</b>\n\n💰 <b>${scale} ${currency} = ${rate.toFixed(4)} BYN</b>${changeLine}`;
+
+  await bot.api.sendMessage(chatId, message, { parse_mode: "HTML" });
 }
 
 /**
