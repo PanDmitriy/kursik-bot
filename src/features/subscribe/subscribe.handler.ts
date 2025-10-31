@@ -4,7 +4,6 @@ import { addSubscription, getUserTimezone } from "../../entities/user/user.repo"
 import { addChangeSubscription } from "../../entities/user/change.repo";
 import { isPremium } from "../../shared/services/premium.service";
 import { TimezoneService } from "../../shared/services/timezone.service";
-import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 // Ожидание ввода времени для выбранной валюты по chatId
 const pendingTimeByChatId = new Map<number, string>();
@@ -13,24 +12,20 @@ export async function handleSubscribe(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.SUBSCRIBE);
-
   const keyboard = new InlineKeyboard();
 
   for (const code of AVAILABLE_CURRENCIES) {
     keyboard.text(code, `sub_currency_${code}`);
   }
 
-  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
+  keyboard.row().text("🏠 Главное меню", "menu_main");
 
   await ctx.reply(
-    `${breadcrumbs}🔔 <b>Подписка на уведомления</b>
+    `🔔 <b>Подписка на уведомления</b>
 
 Выбери валюту для подписки:`,
     { 
-      reply_markup: navKeyboard,
+      reply_markup: keyboard,
       parse_mode: "HTML"
     }
   );

@@ -1,32 +1,28 @@
 import { Context, InlineKeyboard } from "grammy";
 import { getUserSubscriptions } from "../../entities/user/user.repo";
 import { listChangeSubscriptions } from "../../entities/user/change.repo";
-import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 
 export async function handleListSubscriptions(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.SUBSCRIPTIONS);
-
   const subs = getUserSubscriptions(chatId);
   const changeSubs = listChangeSubscriptions(chatId);
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
   if (subs.length === 0 && changeSubs.length === 0) {
-    const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
-      { text: "➕ Добавить подписку", callback_data: "menu_subscribe" }
-    ]);
+    const keyboard = new InlineKeyboard()
+      .text("➕ Добавить подписку", "menu_subscribe")
+      .row()
+      .text("🏠 Главное меню", "menu_main");
     
     await ctx.reply(
-      `${breadcrumbs}🔔 <b>Мои подписки</b>
+      `🔔 <b>Мои подписки</b>
 
 У тебя нет активных подписок.
 
 Используй кнопку ниже, чтобы создать первую подписку:`,
       { 
-        reply_markup: navKeyboard,
+        reply_markup: keyboard,
         parse_mode: "HTML"
       }
     );
@@ -46,19 +42,20 @@ export async function handleListSubscriptions(ctx: Context) {
     sections.push(`<u>По изменению</u>\n${changeLines.join("\n")}`);
   }
   
-  const navKeyboard = NavigationManager.createNavigationKeyboard(chatId, [
-    { text: "➕ Добавить подписку", callback_data: "menu_subscribe" },
-    { text: "❌ Удалить подписку", callback_data: "menu_unsubscribe" }
-  ]);
+  const keyboard = new InlineKeyboard()
+    .text("➕ Добавить подписку", "menu_subscribe")
+    .text("❌ Удалить подписку", "menu_unsubscribe")
+    .row()
+    .text("🏠 Главное меню", "menu_main");
 
   await ctx.reply(
-    `${breadcrumbs}🔔 <b>Мои подписки</b>
+    `🔔 <b>Мои подписки</b>
 
 ${sections.join("\n\n")}
 
 <i>Всего подписок: ${subs.length + changeSubs.length}</i>`,
     { 
-      reply_markup: navKeyboard,
+      reply_markup: keyboard,
       parse_mode: "HTML"
     }
   );

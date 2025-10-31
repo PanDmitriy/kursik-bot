@@ -1,24 +1,20 @@
 import { Context, InlineKeyboard } from "grammy";
 import { getUserSubscriptions, removeSubscription } from "../../entities/user/user.repo";
-import { NavigationManager, NAVIGATION_LEVELS } from "../../shared/utils/navigation";
 import { handleUnsubscribeChange } from "../subscribe_change/unsubscribe_change.handler";
 
 export async function handleUnsubscribe(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Добавляем уровень в хлебные крошки
-  NavigationManager.addBreadcrumb(chatId, NAVIGATION_LEVELS.UNSUBSCRIBE);
-
-  const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
-
   const keyboard = new InlineKeyboard()
     .text("⏰ Ежедневные", "unsub_type_daily")
     .row()
-    .text("🔔 По изменению", "unsub_type_change");
+    .text("🔔 По изменению", "unsub_type_change")
+    .row()
+    .text("🏠 Главное меню", "menu_main");
 
   await ctx.reply(
-    `${breadcrumbs}❌ <b>Отписка от уведомлений</b>
+    `❌ <b>Отписка от уведомлений</b>
 
 Выбери тип подписки для удаления:`,
     { reply_markup: keyboard, parse_mode: "HTML" }
@@ -50,15 +46,15 @@ export async function handleUnsubscribeType(ctx: Context, next: () => Promise<vo
   if (data === "unsub_type_daily") {
     // Показать список ежедневных подписок
     const subs = getUserSubscriptions(chatId);
-    const breadcrumbs = NavigationManager.formatBreadcrumbs(chatId);
 
     if (subs.length === 0) {
-      const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
+      const keyboard = new InlineKeyboard()
+        .text("🏠 Главное меню", "menu_main");
       await ctx.reply(
-        `${breadcrumbs}❌ <b>Отписка от ежедневных</b>
+        `❌ <b>Отписка от ежедневных</b>
 
 ❗ У тебя нет ежедневных подписок.`,
-        { reply_markup: navKeyboard, parse_mode: "HTML" }
+        { reply_markup: keyboard, parse_mode: "HTML" }
       );
       return;
     }
@@ -70,13 +66,13 @@ export async function handleUnsubscribeType(ctx: Context, next: () => Promise<vo
         `unsub_${currency}`
       );
     }
+    keyboard.row().text("🏠 Главное меню", "menu_main");
 
-    const navKeyboard = NavigationManager.createNavigationKeyboard(chatId);
     await ctx.reply(
-      `${breadcrumbs}❌ <b>Отписка от ежедневных</b>
+      `❌ <b>Отписка от ежедневных</b>
 
 Выбери подписку для удаления:`,
-      { reply_markup: navKeyboard, parse_mode: "HTML" }
+      { reply_markup: keyboard, parse_mode: "HTML" }
     );
     return;
   }
