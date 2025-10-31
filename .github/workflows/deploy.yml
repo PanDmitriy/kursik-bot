@@ -1,0 +1,39 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref для деплоя"
+        default: "main"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+
+    steps:
+      - name: Подключение к серверу и деплой
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          envs: TARGET_REF
+          script: |
+            set -e
+            cd "${{ secrets.SSH_WORKDIR }}"
+            git fetch origin "$TARGET_REF"
+            git checkout "$TARGET_REF"
+            git reset --hard "origin/$TARGET_REF"
+            chmod +x deploy.sh
+            ./deploy.sh
+        env:
+          TARGET_REF: ${{ github.event.inputs.ref || github.ref_name || 'main' }}
