@@ -39,22 +39,31 @@ npm run build
 
 ### 4. Настройка PM2
 
-#### Создание ecosystem файла
+#### Проверка ecosystem файла
 
-Создайте файл `ecosystem.config.js` в корне проекта:
+Файл `ecosystem.config.js` уже находится в корне проекта. Если его нет, создайте файл с следующей конфигурацией:
 
 ```js
 module.exports = {
   apps: [
     {
       name: 'kursik-bot',
-      script: 'dist/main.js',
+      script: 'dist/app/main.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
       env: {
         NODE_ENV: 'production',
-        BOT_TOKEN: process.env.BOT_TOKEN
-      }
-    }
-  ]
+      },
+      error_file: './logs/pm2-error.log',
+      out_file: './logs/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      time: true,
+    },
+  ],
 };
 ```
 
@@ -92,13 +101,30 @@ pm2 delete kursik-bot
 
 ### 6. Обновление кода
 
+#### Автоматический деплой через GitHub Actions
+
+Если настроен CI/CD, при пуше в ветку `main` автоматически произойдет деплой на сервер.
+
+#### Ручной деплой
+
+```bash
+# Используйте скрипт деплоя
+chmod +x deploy.sh
+./deploy.sh
+```
+
+Или вручную:
+
 ```bash
 # Подтягиваем обновления из Git
 git pull origin main
-npm install  # если появились новые зависимости
+
+# Устанавливаем зависимости и собираем
+npm ci
+npm run build
 
 # Перезапуск через PM2
-pm2 restart kursik-bot
+pm2 reload ecosystem.config.js --update-env
 ```
 
 ## Структура файлов
@@ -108,11 +134,10 @@ kursik-bot/
 ├── src/                 # Исходный код
 ├── dist/                # Скомпилированный код (создается при сборке)
 ├── data/                # База данных SQLite
-├── Dockerfile           # Конфигурация Docker (не используется при PM2)
-├── docker-compose.yml   # Конфигурация Docker Compose (не используется при PM2)
-├── deploy.sh           # Скрипт автоматического деплоя (не используется при PM2)
-├── env.example         # Пример переменных окружения
-└── .env                # Переменные окружения (создать вручную)
+├── ecosystem.config.js  # Конфигурация PM2
+├── deploy.sh            # Скрипт автоматического деплоя
+├── env.example          # Пример переменных окружения
+└── .env                 # Переменные окружения (создать вручную)
 ```
 
 ## Безопасность
