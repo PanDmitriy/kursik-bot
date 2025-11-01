@@ -19,6 +19,7 @@ import { handleUnsubscribeChangeCallback } from "../../features/subscribe_change
 import {
   handleSetTimezone,
   handleLocation,
+  handleLocationRequest,
   handleManualTimezone,
   handleTimezoneText,
   handleTimezoneSearch,
@@ -126,10 +127,11 @@ bot.command("subscriptions", handleListSubscriptions);
 // Команда /set_timezone
 bot.command("set_timezone", handleSetTimezone);
 bot.on(":location", handleLocation);
-bot.hears("🗂 Выбрать из списка", handleManualTimezone);
-bot.hears("🔍 Поиск часового пояса", handleTimezoneSearch);
 
 // Обработка callback-запросов для часовых поясов
+bot.callbackQuery("tz_location", handleLocationRequest);
+bot.callbackQuery("tz_list", handleManualTimezone);
+bot.callbackQuery("tz_search", handleTimezoneSearch);
 bot.callbackQuery("tz_regions", handleTimezoneRegions);
 bot.callbackQuery("tz_popular", handleManualTimezone);
 

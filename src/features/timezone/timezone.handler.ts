@@ -1,4 +1,4 @@
-import { Context, Keyboard, InlineKeyboard } from "grammy";
+import { Context, InlineKeyboard, Keyboard } from "grammy";
 import tzLookup from "tz-lookup";
 import { setUserTimezone } from "../../entities/user/user.repo";
 import { TimezoneService } from "../../shared/services/timezone.service";
@@ -9,13 +9,10 @@ import {
 } from "../../shared/utils/message-manager";
 
 export async function handleSetTimezone(ctx: Context) {
-  const keyboard = new Keyboard()
-    .requestLocation("📍 Отправить геолокацию")
-    .row()
-    .text("🗂 Выбрать из списка")
-    .row()
-    .text("🔍 Поиск часового пояса")
-    .resized();
+  const keyboard = new InlineKeyboard()
+    .row({ text: "📍 Отправить геолокацию", callback_data: "tz_location" })
+    .row({ text: "🗂 Выбрать из списка", callback_data: "tz_list" })
+    .row({ text: "🔍 Поиск часового пояса", callback_data: "tz_search" });
 
   await sendTimezoneInterfaceMessage(
     ctx,
@@ -32,6 +29,34 @@ export async function handleSetTimezone(ctx: Context) {
       reply_markup: keyboard,
       parse_mode: "HTML"
     }
+  );
+}
+
+/**
+ * Обработчик нажатия на кнопку "Отправить геолокацию"
+ */
+export async function handleLocationRequest(ctx: Context) {
+  await ctx.answerCallbackQuery();
+  
+  await updateTimezoneInterfaceMessage(
+    ctx,
+    `📍 <b>Отправка геолокации</b>
+
+Нажми на кнопку "📍" внизу справа и выбери <b>Отправить геолокацию</b>, чтобы автоматически определить часовой пояс по твоим координатам.
+
+<i>Твои данные не сохраняются, используются только для определения часового пояса.</i>`,
+    { parse_mode: "HTML" }
+  );
+  
+  // Отправляем сообщение с reply клавиатурой для запроса геолокации
+  // (requestLocation работает только с Keyboard, не с InlineKeyboard)
+  const locationKeyboard = new Keyboard()
+    .requestLocation("📍 Отправить геолокацию")
+    .resized();
+  
+  await ctx.reply(
+    "Нажми на кнопку ниже, чтобы отправить геолокацию:",
+    { reply_markup: locationKeyboard }
   );
 }
 
@@ -56,6 +81,7 @@ export async function handleLocation(ctx: Context) {
     // Завершаем интерфейс и отправляем финальное сообщение
     finishTimezoneInterface(chatId);
     
+    // Удаляем клавиатуру при отправке ответа (на случай если была reply клавиатура)
     await ctx.reply(
       `✅ <b>Часовой пояс установлен!</b>
 
@@ -63,7 +89,10 @@ export async function handleLocation(ctx: Context) {
 🕐 Текущее время: <code>${currentTime}</code>
 
 Теперь уведомления будут приходить в правильное время для твоего региона.`,
-      { parse_mode: "HTML" }
+      { 
+        parse_mode: "HTML",
+        reply_markup: { remove_keyboard: true }
+      }
     );
   } catch (err) {
     await updateTimezoneInterfaceMessage(ctx, "⚠️ Не удалось определить часовой пояс по координатам. Попробуй другой способ.");
@@ -71,6 +100,14 @@ export async function handleLocation(ctx: Context) {
 }
 
 export async function handleManualTimezone(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  // Если это callback запрос, отвечаем на него
+  if (ctx.callbackQuery) {
+    await ctx.answerCallbackQuery();
+  }
+
   const popularTimezones = TimezoneService.getPopularTimezones();
   
   const keyboard = new InlineKeyboard();
@@ -108,6 +145,14 @@ export async function handleManualTimezone(ctx: Context) {
 }
 
 export async function handleTimezoneSearch(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  // Если это callback запрос, отвечаем на него
+  if (ctx.callbackQuery) {
+    await ctx.answerCallbackQuery();
+  }
+
   await updateTimezoneInterfaceMessage(
     ctx,
     `🔍 <b>Поиск часового пояса</b>
