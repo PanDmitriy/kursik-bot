@@ -30,9 +30,9 @@ jobs:
           script: |
             set -e
             cd "${{ secrets.SSH_WORKDIR }}"
-            git fetch origin
-            git checkout "$TARGET_REF"
-            git reset --hard "$TARGET_REF"
+            git fetch origin "$TARGET_REF"
+            git reset --hard FETCH_HEAD
+            git clean -fd
             chmod +x deploy.sh
             ./deploy.sh
         env:

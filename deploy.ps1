@@ -1,4 +1,4 @@
-# Скрипт для деплоя на продакшен (PowerShell)
+# Скрипт для деплоя на продакшен с PM2 (PowerShell)
 # Использование: .\deploy.ps1
 
 Write-Host "🚀 Начинаем деплой kursik-bot..." -ForegroundColor Green
@@ -12,26 +12,39 @@ if (-not (Test-Path ".env")) {
     exit 1
 }
 
-# Останавливаем существующий контейнер
-Write-Host "🛑 Останавливаем существующий контейнер..." -ForegroundColor Yellow
-try {
-    docker-compose down
-} catch {
-    Write-Host "Контейнер не был запущен" -ForegroundColor Gray
+# Проверяем наличие PM2
+$pm2Installed = Get-Command pm2 -ErrorAction SilentlyContinue
+if (-not $pm2Installed) {
+    Write-Host "❌ PM2 не установлен!" -ForegroundColor Red
+    Write-Host "📦 Установите PM2: npm install -g pm2" -ForegroundColor Yellow
+    exit 1
 }
 
-# Собираем новый образ
-Write-Host "🔨 Собираем новый образ..." -ForegroundColor Yellow
-docker-compose build --no-cache
+# Устанавливаем зависимости
+Write-Host "📦 Устанавливаем зависимости..." -ForegroundColor Yellow
+npm ci --production=false
 
-# Запускаем контейнер
-Write-Host "▶️ Запускаем контейнер..." -ForegroundColor Yellow
-docker-compose up -d
+# Собираем проект
+Write-Host "🔨 Собираем проект..." -ForegroundColor Yellow
+npm run build
+
+# Проверяем, запущен ли бот
+$pm2List = pm2 list
+if ($pm2List -match "kursik-bot") {
+    Write-Host "🔄 Перезапускаем приложение..." -ForegroundColor Yellow
+    pm2 reload ecosystem.config.js --update-env
+} else {
+    Write-Host "▶️ Запускаем приложение..." -ForegroundColor Yellow
+    pm2 start ecosystem.config.js
+    pm2 save
+}
 
 # Проверяем статус
-Write-Host "📊 Проверяем статус контейнера..." -ForegroundColor Yellow
-docker-compose ps
+Write-Host "📊 Проверяем статус приложения..." -ForegroundColor Yellow
+Start-Sleep -Seconds 2
+pm2 status kursik-bot
 
 Write-Host "✅ Деплой завершен!" -ForegroundColor Green
-Write-Host "📝 Для просмотра логов используйте: docker-compose logs -f" -ForegroundColor Cyan
-Write-Host "🛑 Для остановки используйте: docker-compose down" -ForegroundColor Cyan
+Write-Host "📝 Для просмотра логов используйте: pm2 logs kursik-bot" -ForegroundColor Cyan
+Write-Host "📊 Для просмотра статуса используйте: pm2 status" -ForegroundColor Cyan
+Write-Host "🛑 Для остановки используйте: pm2 stop kursik-bot" -ForegroundColor Cyan
