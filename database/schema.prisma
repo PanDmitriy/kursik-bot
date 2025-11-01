@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Подписки пользователей на курсы валют по времени
+model Subscription {
+  chatId   Int    @map("chat_id")
+  currency String
+  hour     Int
+  minute   Int    @default(0)
+  timezone String @default("Europe/Minsk")
+
+  @@id([chatId, currency, hour, minute])
+  @@map("subscriptions")
+  @@index([chatId])
+  @@index([currency])
+}
+
+// Подписки на изменение курса валют
+model ChangeSubscription {
+  chatId    Int      @map("chat_id")
+  currency  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([chatId, currency])
+  @@map("change_subscriptions")
+  @@index([currency])
+}
+
+// Последние курсы валют
+model LastRate {
+  currency String   @id
+  rate     Float
+  scale    Int
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@map("last_rates")
+}

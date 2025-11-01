@@ -25,7 +25,15 @@ nano .env
 BOT_TOKEN=your_telegram_bot_token_here
 ```
 
-**Примечание:** Проект использует только переменную `BOT_TOKEN`. База данных SQLite создается автоматически в файле `data.sqlite`, а курсы валют получаются через API Национального банка Беларуси без дополнительной настройки.
+**Примечание:** Проект использует переменные `BOT_TOKEN` и `DATABASE_URL`. База данных SQLite создается автоматически в файле `data.sqlite`, а курсы валют получаются через API Национального банка Беларуси без дополнительной настройки.
+
+```env
+# Токен Telegram бота
+BOT_TOKEN=your_telegram_bot_token_here
+
+# URL базы данных SQLite (Prisma)
+DATABASE_URL="file:./database/data.sqlite"
+```
 
 ### 3. Установка зависимостей и сборка
 
@@ -122,6 +130,9 @@ git pull origin main
 # Устанавливаем зависимости и собираем
 npm ci
 npm run build
+
+# Применяем миграции базы данных
+npx prisma migrate deploy --schema=database/schema.prisma
 
 # Перезапуск через PM2
 pm2 reload ecosystem.config.js --update-env

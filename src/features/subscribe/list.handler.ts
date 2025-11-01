@@ -6,8 +6,8 @@ export async function handleListSubscriptions(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const subs = getUserSubscriptions(chatId);
-  const changeSubs = listChangeSubscriptions(chatId);
+  const subs = await getUserSubscriptions(chatId);
+  const changeSubs = await listChangeSubscriptions(chatId);
 
   if (subs.length === 0 && changeSubs.length === 0) {
     const keyboard = new InlineKeyboard()

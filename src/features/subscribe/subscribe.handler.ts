@@ -130,7 +130,7 @@ export async function handleSubscribeCurrency(ctx: Context, next: () => Promise<
       await ctx.reply("🔒 Подписка по изменению курса доступна в премиум-версии.");
       return;
     }
-    addChangeSubscription(chatId, currency);
+    await addChangeSubscription(chatId, currency);
     await ctx.reply(`✅ Подписка по изменению курса для <b>${currency}</b> оформлена.`, { parse_mode: "HTML" });
     return;
   }
@@ -175,15 +175,15 @@ export async function handleSubscribeTime(ctx: Context, next: () => Promise<void
     return;
   }
 
-  const userTimezone = getUserTimezone(chatId);
+  const userTimezone = await getUserTimezone(chatId);
   const timezoneInfo = TimezoneService.getTimezoneInfo(userTimezone);
   
-  addSubscription(chatId, pendingCurrency, hour, minute, userTimezone);
+  await addSubscription(chatId, pendingCurrency, hour, minute, userTimezone);
   
   const timezoneDisplay = timezoneInfo?.displayName || userTimezone;
   
   // Проверяем, сколько подписок уже есть для этой валюты
-  const allSubs = getUserSubscriptions(chatId);
+  const allSubs = await getUserSubscriptions(chatId);
   const currencySubs = allSubs.filter(s => s.currency === pendingCurrency);
   
   let additionalMessage = "";

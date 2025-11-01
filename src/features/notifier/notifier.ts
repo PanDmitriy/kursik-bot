@@ -24,11 +24,11 @@ export function startNotifier(bot: Bot) {
     
     try {
       // Можно оптимизировать — если пользователей станет много
-      const allChatIds = getAllChatIds();
+      const allChatIds = await getAllChatIds();
 
       for (const chatId of allChatIds) {
         try {
-          const subs: Subscription[] = getUserSubscriptions(chatId);
+          const subs: Subscription[] = await getUserSubscriptions(chatId);
 
           for (const { currency, hour, minute, timezone } of subs) {
             const now = DateTime.now().setZone(timezone);
@@ -61,7 +61,7 @@ export function startNotifier(bot: Bot) {
     isChangeNotifierRunning = true;
 
     try {
-      const currencies = getDistinctChangeCurrencies();
+      const currencies = await getDistinctChangeCurrencies();
       if (currencies.length === 0) return;
 
       for (const currency of currencies) {
@@ -69,10 +69,10 @@ export function startNotifier(bot: Bot) {
           const current = await getExchangeRate(currency);
           if (!current) continue;
 
-          const prev = getLastRate(currency);
+          const prev = await getLastRate(currency);
           // Если нет предыдущего значения — инициализируем без уведомлений
           if (!prev) {
-            setLastRate(currency, current.rate, current.scale);
+            await setLastRate(currency, current.rate, current.scale);
             continue;
           }
 
@@ -81,7 +81,7 @@ export function startNotifier(bot: Bot) {
 
           // Получаем расширенные данные для красивого уведомления
           const enhanced = await getEnhancedExchangeRate(currency);
-          const subscribers = getChangeSubscribersByCurrency(currency);
+          const subscribers = await getChangeSubscribersByCurrency(currency);
 
           // Отправляем уведомления всем подписчикам
           for (const chatId of subscribers) {
@@ -99,7 +99,7 @@ export function startNotifier(bot: Bot) {
 
           // Обновляем last_rate после отправки всех уведомлений
           // Это гарантирует, что изменение курса будет отмечено как обработанное только после попыток отправки
-          setLastRate(currency, current.rate, current.scale);
+          await setLastRate(currency, current.rate, current.scale);
         } catch (e) {
           console.error(`[NOTIFIER] Ошибка при обработке изменений для ${currency}:`, e);
         }

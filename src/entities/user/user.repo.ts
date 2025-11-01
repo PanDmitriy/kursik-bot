@@ -1,4 +1,4 @@
-import db from "../../shared/db/db";
+import prisma from "../../shared/db/db";
 
 export interface Subscription {
   currency: string;
@@ -7,57 +7,103 @@ export interface Subscription {
   timezone: string;
 }
 
-export function addSubscription(chatId: number, currency: string, hour: number, minute: number, timezone = "Europe/Minsk") {
-  const stmt = db.prepare(`
-    INSERT OR IGNORE INTO subscriptions (chat_id, currency, hour, minute, timezone)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-  stmt.run(chatId, currency, hour, minute, timezone);
+export async function addSubscription(
+  chatId: number,
+  currency: string,
+  hour: number,
+  minute: number,
+  timezone = "Europe/Minsk"
+) {
+  await prisma.subscription.upsert({
+    where: {
+      chatId_currency_hour_minute: {
+        chatId,
+        currency,
+        hour,
+        minute,
+      },
+    },
+    update: {
+      timezone,
+    },
+    create: {
+      chatId,
+      currency,
+      hour,
+      minute,
+      timezone,
+    },
+  });
 }
 
+export async function getUserSubscriptions(chatId: number): Promise<Subscription[]> {
+  const subscriptions = await prisma.subscription.findMany({
+    where: { chatId },
+    select: {
+      currency: true,
+      hour: true,
+      minute: true,
+      timezone: true,
+    },
+  });
 
-export function getUserSubscriptions(chatId: number): Subscription[] {
-    return db.prepare(`SELECT currency, hour, minute, timezone FROM subscriptions WHERE chat_id = ?`).all(chatId) as Subscription[];
+  return subscriptions;
 }
 
-export function removeSubscription(chatId: number, currency: string, hour?: number, minute?: number): boolean {
-  let result;
-  
+export async function removeSubscription(
+  chatId: number,
+  currency: string,
+  hour?: number,
+  minute?: number
+): Promise<boolean> {
   if (hour !== undefined && minute !== undefined) {
     // Удаляем подписку с конкретным временем
-    const hourNum = Number(hour);
-    const minuteNum = Number(minute);
-    const stmt = db.prepare(`
-      DELETE FROM subscriptions WHERE chat_id = ? AND currency = ? AND hour = ? AND minute = ?
-    `);
-    result = stmt.run(chatId, currency, hourNum, minuteNum);
+    const result = await prisma.subscription.deleteMany({
+      where: {
+        chatId,
+        currency,
+        hour,
+        minute,
+      },
+    });
+    return result.count > 0;
   } else {
     // Удаляем все подписки на эту валюту (обратная совместимость)
-    const stmt = db.prepare(`
-      DELETE FROM subscriptions WHERE chat_id = ? AND currency = ?
-    `);
-    result = stmt.run(chatId, currency);
+    const result = await prisma.subscription.deleteMany({
+      where: {
+        chatId,
+        currency,
+      },
+    });
+    return result.count > 0;
   }
-  
-  // Возвращаем true, если была удалена хотя бы одна строка
-  return (result.changes ?? 0) > 0;
 }
 
-export function getAllChatIds(): number[] {
-  const rows = db.prepare("SELECT DISTINCT chat_id FROM subscriptions").all() as { chat_id: number }[];
-  return rows.map((r) => r.chat_id);
+export async function getAllChatIds(): Promise<number[]> {
+  const subscriptions = await prisma.subscription.findMany({
+    select: {
+      chatId: true,
+    },
+    distinct: ["chatId"],
+  });
+
+  return subscriptions.map((s) => s.chatId);
 }
 
-export function getUserTimezone(chatId: number): string {
-  const row = db.prepare(`
-    SELECT timezone FROM subscriptions WHERE chat_id = ? LIMIT 1
-  `).get(chatId) as { timezone: string } | undefined;
-  
-  return row?.timezone || "Europe/Minsk";
+export async function getUserTimezone(chatId: number): Promise<string> {
+  const subscription = await prisma.subscription.findFirst({
+    where: { chatId },
+    select: {
+      timezone: true,
+    },
+  });
+
+  return subscription?.timezone || "Europe/Minsk";
 }
 
-export function setUserTimezone(chatId: number, timezone: string) {
-  db.prepare(`
-    UPDATE subscriptions SET timezone = ? WHERE chat_id = ?
-  `).run(timezone, chatId);
+export async function setUserTimezone(chatId: number, timezone: string) {
+  await prisma.subscription.updateMany({
+    where: { chatId },
+    data: { timezone },
+  });
 }

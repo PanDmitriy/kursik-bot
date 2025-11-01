@@ -4,10 +4,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn src/app/main.ts",
-    "build": "tsc && npm run copy-assets",
-    "copy-assets": "copyfiles -u 1 \"src/**/*.sql\" dist/",
+    "build": "prisma generate --schema=database/schema.prisma && tsc",
     "start": "node dist/app/main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:migrate": "prisma migrate dev --schema=database/schema.prisma",
+    "db:studio": "prisma studio --schema=database/schema.prisma"
   },
   "keywords": [],
   "author": "",
@@ -24,12 +25,14 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@prisma/client": "^6.18.0",
     "axios": "^1.10.0",
     "better-sqlite3": "^12.2.0",
     "dotenv": "^16.5.0",
     "grammy": "^1.36.3",
     "luxon": "^3.6.1",
     "node-cron": "^4.2.0",
+    "prisma": "^6.18.0",
     "sqlite3": "^5.1.7",
     "tz-lookup": "^6.1.25"
   }

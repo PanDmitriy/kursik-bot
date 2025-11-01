@@ -28,6 +28,10 @@ npm ci --production=false
 Write-Host "🔨 Собираем проект..." -ForegroundColor Yellow
 npm run build
 
+# Применяем миграции базы данных
+Write-Host "🗄️ Применяем миграции базы данных..." -ForegroundColor Yellow
+npx prisma migrate deploy --schema=database/schema.prisma
+
 # Проверяем, запущен ли бот
 $pm2List = pm2 list
 if ($pm2List -match "kursik-bot") {
