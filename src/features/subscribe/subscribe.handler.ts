@@ -1,6 +1,6 @@
 import { Context, InlineKeyboard } from "grammy";
 import { AVAILABLE_CURRENCIES } from "../rates/rate.handler";
-import { addSubscription, getUserTimezone } from "../../entities/user/user.repo";
+import { addSubscription, getUserTimezone, getUserSubscriptions } from "../../entities/user/user.repo";
 import { addChangeSubscription } from "../../entities/user/change.repo";
 import { isPremium } from "../../shared/services/premium.service";
 import { TimezoneService } from "../../shared/services/timezone.service";
@@ -157,6 +157,15 @@ export async function handleSubscribeTime(ctx: Context, next: () => Promise<void
   
   const timezoneDisplay = timezoneInfo?.displayName || userTimezone;
   
+  // Проверяем, сколько подписок уже есть для этой валюты
+  const allSubs = getUserSubscriptions(chatId);
+  const currencySubs = allSubs.filter(s => s.currency === pendingCurrency);
+  
+  let additionalMessage = "";
+  if (currencySubs.length > 1) {
+    additionalMessage = `\n\n💡 <i>У тебя ${currencySubs.length} подписки(ок) на ${pendingCurrency}. Можно добавить еще!</i>`;
+  }
+
   await ctx.reply(
     `✅ <b>Подписка создана!</b>
 
@@ -165,6 +174,7 @@ export async function handleSubscribeTime(ctx: Context, next: () => Promise<void
 🌍 Часовой пояс: <b>${timezoneDisplay}</b>
 
 Уведомления будут приходить ежедневно в указанное время.
+${additionalMessage}
 
 <i>Изменить часовой пояс можно через /set_timezone</i>`,
     { parse_mode: "HTML" }

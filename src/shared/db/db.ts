@@ -26,9 +26,19 @@ if (fs.existsSync(migrationsPath)) {
       db.exec(migration);
       console.log(`✅ Миграция ${file} выполнена`);
     } catch (error) {
-      // Игнорируем ошибки типа "column already exists"
-      if (error instanceof Error && error.message.includes('duplicate column name')) {
-        console.log(`⚠️ Миграция ${file} уже выполнена`);
+      // Игнорируем ошибки типа "column already exists", "table already exists", "no such table"
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        if (errorMsg.includes('duplicate column name') ||
+            errorMsg.includes('already exists') ||
+            errorMsg.includes('no such table') ||
+            (file === '004_change_subscriptions_primary_key.sql' && 
+             (errorMsg.includes('table subscriptions already exists') || 
+              errorMsg.includes('subscriptions_new')))) {
+          console.log(`⚠️ Миграция ${file} уже выполнена или не требуется`);
+        } else {
+          console.error(`❌ Ошибка в миграции ${file}:`, error);
+        }
       } else {
         console.error(`❌ Ошибка в миграции ${file}:`, error);
       }

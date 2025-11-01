@@ -29,9 +29,24 @@ export async function handleListSubscriptions(ctx: Context) {
     return;
   }
 
-  const dailyLines = subs.map(
-    (s) => `• <b>${s.currency}</b> — ${s.hour.toString().padStart(2, "0")}:${(s.minute ?? 0).toString().padStart(2, "0")}`
-  );
+  // Группируем подписки по валютам
+  const subsByCurrency = new Map<string, Array<{ hour: number; minute: number }>>();
+  for (const s of subs) {
+    if (!subsByCurrency.has(s.currency)) {
+      subsByCurrency.set(s.currency, []);
+    }
+    subsByCurrency.get(s.currency)!.push({ hour: s.hour, minute: s.minute ?? 0 });
+  }
+
+  const dailyLines: string[] = [];
+  for (const [currency, times] of subsByCurrency) {
+    const timeStr = times
+      .sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
+      .map(t => `${t.hour.toString().padStart(2, "0")}:${t.minute.toString().padStart(2, "0")}`)
+      .join(", ");
+    dailyLines.push(`• <b>${currency}</b> — ${timeStr}`);
+  }
+
   const changeLines = changeSubs.map((c) => `• <b>${c}</b> — при изменении курса`);
 
   const sections: string[] = [];

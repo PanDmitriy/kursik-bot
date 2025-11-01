@@ -9,7 +9,7 @@ export interface Subscription {
 
 export function addSubscription(chatId: number, currency: string, hour: number, minute: number, timezone = "Europe/Minsk") {
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO subscriptions (chat_id, currency, hour, minute, timezone)
+    INSERT OR IGNORE INTO subscriptions (chat_id, currency, hour, minute, timezone)
     VALUES (?, ?, ?, ?, ?)
   `);
   stmt.run(chatId, currency, hour, minute, timezone);

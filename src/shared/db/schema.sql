@@ -4,5 +4,5 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   hour INTEGER NOT NULL,
   minute INTEGER NOT NULL DEFAULT 0,
   timezone TEXT DEFAULT 'Europe/Minsk',
-  PRIMARY KEY (chat_id, currency)
+  PRIMARY KEY (chat_id, currency, hour, minute)
 );
