@@ -144,11 +144,36 @@ export async function handleSubscribeTime(ctx: Context, next: () => Promise<void
   const pendingCurrency = pendingTimeByChatId.get(chatId);
   if (!pendingCurrency) return next();
 
-  const match = text.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
-  if (!match) return next();
+  // Проверяем формат времени HH:mm
+  const match = text.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!match) {
+    await ctx.reply(
+      `❌ <b>Неверный формат времени</b>\n\nПожалуйста, введи время для <b>${pendingCurrency}</b> в формате HH:mm (например, 09:00 или 18:45).`,
+      { parse_mode: "HTML" }
+    );
+    return;
+  }
 
   const hour = parseInt(match[1], 10);
   const minute = parseInt(match[2], 10);
+
+  // Проверяем диапазон часов (0-23)
+  if (hour < 0 || hour > 23) {
+    await ctx.reply(
+      `❌ <b>Неверное значение часов</b>\n\nЧасы должны быть в диапазоне от 00 до 23.\nПожалуйста, введи время для <b>${pendingCurrency}</b> в формате HH:mm (например, 09:00 или 18:45).`,
+      { parse_mode: "HTML" }
+    );
+    return;
+  }
+
+  // Проверяем диапазон минут (0-59)
+  if (minute < 0 || minute > 59) {
+    await ctx.reply(
+      `❌ <b>Неверное значение минут</b>\n\nМинуты должны быть в диапазоне от 00 до 59.\nПожалуйста, введи время для <b>${pendingCurrency}</b> в формате HH:mm (например, 09:00 или 18:45).`,
+      { parse_mode: "HTML" }
+    );
+    return;
+  }
 
   const userTimezone = getUserTimezone(chatId);
   const timezoneInfo = TimezoneService.getTimezoneInfo(userTimezone);

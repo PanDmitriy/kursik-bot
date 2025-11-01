@@ -110,8 +110,8 @@ bot.callbackQuery("sub_type_daily", handleSubscribeTypeSelect);
 bot.callbackQuery("sub_type_change", handleSubscribeTypeSelect);
 bot.callbackQuery(/sub_type_select_/, handleSubscribeTypeSelectFromRate);
 bot.callbackQuery(/sub_currency_/, handleSubscribeCurrency);
-// Обработка текстового ввода времени HH:mm
-bot.hears(/^([01]?\d|2[0-3]):([0-5]\d)$/, handleSubscribeTime);
+// Обработка текстового ввода времени HH:mm (любой формат, проверка внутри функции)
+bot.hears(/^\d{1,2}:\d{1,2}$/, handleSubscribeTime);
 
 // Колбэк удаления change-подписки (используется из сценария выбора типа удаления)
 bot.callbackQuery(/unsubchg_/, handleUnsubscribeChangeCallback);
