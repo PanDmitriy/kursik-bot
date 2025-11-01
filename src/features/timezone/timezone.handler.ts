@@ -74,7 +74,7 @@ export async function handleLocation(ctx: Context) {
     }
 
     const timezoneInfo = TimezoneService.getTimezoneInfo(timezone);
-    setUserTimezone(chatId, timezone);
+    await setUserTimezone(chatId, timezone);
 
     const currentTime = TimezoneService.getCurrentTimeInTimezone(timezone);
     
@@ -282,7 +282,7 @@ export async function handleTimezoneCallback(ctx: Context, timezoneId: string) {
     return;
   }
 
-  setUserTimezone(chatId, timezoneId);
+  await setUserTimezone(chatId, timezoneId);
   const currentTime = TimezoneService.getCurrentTimeInTimezone(timezoneId);
 
   // Завершаем интерфейс часовых поясов
@@ -312,7 +312,7 @@ export async function handleTimezoneText(ctx: Context) {
   if (TimezoneService.isValidTimezone(timezone)) {
     const timezoneInfo = TimezoneService.getTimezoneInfo(timezone);
     if (timezoneInfo) {
-      setUserTimezone(chatId, timezone);
+      await setUserTimezone(chatId, timezone);
       const currentTime = TimezoneService.getCurrentTimeInTimezone(timezone);
       
       // Завершаем интерфейс часовых поясов

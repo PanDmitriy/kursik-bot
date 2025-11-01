@@ -54,10 +54,10 @@ export async function handleUnsubscribeCallback(ctx: Context, next: () => Promis
     }
 
     // Для отладки: получаем текущие подписки
-    const currentSubs = getUserSubscriptions(chatId);
+    const currentSubs = await getUserSubscriptions(chatId);
     console.log(`[UNSUBSCRIBE] Текущие подписки для chatId=${chatId}:`, JSON.stringify(currentSubs));
 
-    const deleted = removeSubscription(chatId, currency, hour, minute);
+    const deleted = await removeSubscription(chatId, currency, hour, minute);
     if (deleted) {
       await ctx.answerCallbackQuery({ text: `✅ Подписка ${currency} на ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")} удалена.` });
       await ctx.reply(`✅ Подписка на ${currency} в ${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")} отменена.`);
@@ -69,7 +69,7 @@ export async function handleUnsubscribeCallback(ctx: Context, next: () => Promis
   } else {
     // Старый формат для обратной совместимости: unsub_CURRENCY
     const currency = rest;
-    const deleted = removeSubscription(chatId, currency);
+    const deleted = await removeSubscription(chatId, currency);
     if (deleted) {
       await ctx.answerCallbackQuery({ text: `✅ Подписка для ${currency} удалена.` });
       await ctx.reply(`✅ Подписка на ${currency} отменена.`);
@@ -92,7 +92,7 @@ export async function handleUnsubscribeType(ctx: Context, next: () => Promise<vo
 
   if (data === "unsub_type_daily") {
     // Показать список ежедневных подписок с кнопками времени
-    const subs = getUserSubscriptions(chatId);
+    const subs = await getUserSubscriptions(chatId);
 
     if (subs.length === 0) {
       const keyboard = new InlineKeyboard()

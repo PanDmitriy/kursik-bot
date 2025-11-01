@@ -116,8 +116,8 @@ export async function handleStatsMenu(ctx: Context) {
   if (!chatId) return;
 
   // Получаем статистику пользователя
-  const subs = getUserSubscriptions(chatId);
-  const changeSubs = listChangeSubscriptions(chatId);
+  const subs = await getUserSubscriptions(chatId);
+  const changeSubs = await listChangeSubscriptions(chatId);
   const totalSubs = subs.length + changeSubs.length;
   
   // Объединяем валюты из обоих типов подписок
@@ -128,12 +128,14 @@ export async function handleStatsMenu(ctx: Context) {
   const keyboard = new InlineKeyboard()
     .text("🏠 Главное меню", "menu_main");
 
+  const userTimezone = await getUserTimezone(chatId);
+
   await ctx.reply(
     `📊 <b>Твоя статистика</b>
 
 🔔 Активных подписок: <b>${totalSubs}</b>
 💰 Отслеживаемых валют: <b>${allCurrencies.size}</b>
-🌍 Часовой пояс: <b>${getUserTimezone(chatId)}</b>
+🌍 Часовой пояс: <b>${userTimezone}</b>
 
 <i>Статистика обновляется в реальном времени</i>`,
     { 

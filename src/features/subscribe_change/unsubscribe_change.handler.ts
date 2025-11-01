@@ -5,7 +5,7 @@ export async function handleUnsubscribeChange(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const subs = listChangeSubscriptions(chatId);
+  const subs = await listChangeSubscriptions(chatId);
   if (subs.length === 0) {
     await ctx.reply("❌ У тебя нет подписок по изменению курса.");
     return;
@@ -30,7 +30,7 @@ export async function handleUnsubscribeChangeCallback(
   const chatId = ctx.chat?.id;
   if (!chatId) return next();
 
-  removeChangeSubscription(chatId, currency);
+  await removeChangeSubscription(chatId, currency);
   await ctx.answerCallbackQuery({ text: `✅ Подписка для ${currency} удалена.` });
   await ctx.reply(`Подписка по изменению курса ${currency} отменена.`);
 }

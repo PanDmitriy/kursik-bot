@@ -40,7 +40,7 @@ export async function handleSubscribeChangeCurrency(
     return;
   }
 
-  addChangeSubscription(chatId, currency);
+  await addChangeSubscription(chatId, currency);
   await ctx.answerCallbackQuery({ text: `✅ Подписка на ${currency} оформлена` });
   await ctx.reply(
     `Теперь ты получишь уведомление, как только курс ${currency} изменится.`,
