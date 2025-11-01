@@ -63,6 +63,7 @@ build/
 
 # SQLite database
 data.sqlite
+database/data.sqlite
 
 # DB schema (если не нужен в репозитории)
 # src/shared/db/schema.sql 
